@@ -226,8 +226,6 @@ namespace vCommands
             }
 
             Commands = all.ToArray();
-
-            Manual.Parser.ParseXML(Properties.Resources.default_manual).ToArray();
         }
 
         public static void Register(CommandHost host)

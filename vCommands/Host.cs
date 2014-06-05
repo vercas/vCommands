@@ -149,6 +149,8 @@ namespace vCommands
         public void RegisterDefaultCommands()
         {
             DefaultCommands.Register(this);
+
+            Manual.Parser.ParseXML(Properties.Resources.default_manual).ToArray();
         }
 
         #endregion
