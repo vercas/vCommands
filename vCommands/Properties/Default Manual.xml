@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<manuals>
+    <manual title="man">
+        <abstract>This manual explains the usage of the "man" command and how to read and interpret vCommand manuals.</abstract>
+        
+        <section title="Command Parameters">
+            <body>Hodor, hodor hodor hodor, hodor hodor hodor hodor hodor hodor. Hodor hodor hodor hodor, hodor hodor Hodor hodor hodor hodor hodor hodor hodor hodor,
+hodor Hodor hodor hodor hodor hodor hodor. Hodor Hodor, hodor, hodor hodor hodor hodor hodor hodor hodor.</body>
+        </section>
+    </manual>
+</manuals>
