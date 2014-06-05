@@ -93,7 +93,7 @@ namespace Test_Application
         static void Program_Change(object sender, vCommands.EventArguments.VariableChangeEventArgs e)
         {
             e.Cancel = true;
-            e.CancelReason = "u no set dis shiet mayun";
+            e.CancelReason = "u no set dis mayun";
         }
 
         static void Program_Invocation(Command sender, vCommands.EventArguments.CommandInvocationEventArgs e)
