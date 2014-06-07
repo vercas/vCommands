@@ -8,6 +8,8 @@ namespace vCommands
 {
     using Commands;
     using Variables;
+    using Manuals;
+    using Manuals.Drivers;
     using Parsing.Expressions;
     using Utilities;
 
@@ -89,6 +91,7 @@ namespace vCommands
             {
                 new Tuple<BinaryMathematicalFunction<double>, string>(Math.Log, "Computes the logarithm of the first numbers in the base of the second number."),
                 new Tuple<BinaryMathematicalFunction<double>, string>(Math.Pow, "Computes the first number raised to the power of the second number."),
+                new Tuple<BinaryMathematicalFunction<double>, string>(Math.Atan2, "Computes the arctangent using the two given numbers."),
                 new Tuple<BinaryMathematicalFunction<double>, string>(mod, "Computes the remainder of dividing the first number to the second."),
             };
 
@@ -228,10 +231,15 @@ namespace vCommands
             Commands = all.ToArray();
         }
 
-        public static void Register(CommandHost host)
+        public static void Register(CommandHost host, bool includeManual)
         {
-            for (int i = 0; i < Commands.Length; i++)
-                host.RegisterCommand(Commands[i]);
+            if (includeManual)
+                for (int i = 0; i < Commands.Length; i++)
+                    host.RegisterCommand(Commands[i]);
+            else
+                for (int i = 0; i < Commands.Length; i++)
+                    if (Commands[i].Name != "man")
+                        host.RegisterCommand(Commands[i]);
         }
 
         //  And now, the commands.
@@ -1260,5 +1268,222 @@ namespace vCommands
         }
 
         #endregion
+
+        [MethodCommandData(abstr: "Searches for a manual in the library by title.")]
+        static EvaluationResult man(bool? toggle, EvaluationContext context, Expression[] args)
+        {
+            if (args.Length < 1)
+                return new EvaluationResult(1, "'man' must receive at least one argument: a regex or name and additional flags.");
+
+            var evalRes = args[0].Evaluate(context);
+
+            if (!evalRes.TruthValue)
+                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+
+            var rgx = new Regex(evalRes.Output);
+
+            //  Processing flags
+
+            int displayLocation = 0;
+            ManualLookupLocation ll = ManualLookupLocation.ManualTitle;
+            IDriver drv = context.Host.ManualDrivers.DefaultDriver;
+            int[] scsi = null;
+
+            for (int i = 1; i < args.Length; i++)
+            {
+                evalRes = args[i].Evaluate(context);
+
+                if (!evalRes.TruthValue)
+                    return new EvaluationResult(3, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+
+                switch (evalRes.Output)
+                {
+                    //  Lookup locations
+
+                    case "nomt":
+                        ll &= ~ManualLookupLocation.ManualTitle;
+                        break;
+
+                    case "ma":
+                        ll |= ManualLookupLocation.ManualAbstract;
+                        break;
+
+                    case "st":
+                        ll |= ManualLookupLocation.SectionTitles;
+                        break;
+
+                    case "sb":
+                        ll |= ManualLookupLocation.SectionBodies;
+                        break;
+
+                    //  Display information
+
+                    case "jt":
+                        if (displayLocation != 0) return new EvaluationResult(4, string.Format("A display location was already specified before argument #{0}", i + 1));
+                        displayLocation = 1;
+                        break;
+
+                    case "ja":
+                        if (displayLocation != 0) return new EvaluationResult(4, string.Format("A display location was already specified before argument #{0}", i + 1));
+                        displayLocation = 2;
+                        break;
+
+                    case "ji":
+                        if (displayLocation != 0) return new EvaluationResult(4, string.Format("A display location was already specified before argument #{0}", i + 1));
+                        displayLocation = 3;
+                        break;
+
+                    default:
+                        var str = evalRes.Output;
+
+                        if (str.StartsWith("driver="))
+                        {
+                            if (displayLocation != 0) return new EvaluationResult(4, string.Format("A display location was already specified before argument #{0}", i + 1));
+                            displayLocation = -1;
+
+                            var drvn = str.Substring(7);
+
+                            if (drvn.Length == 0)
+                                return new EvaluationResult(13, string.Format("Something must follow \"driver=\" at argument #{0}.", i + 1));
+
+                            drv = context.Host.ManualDrivers[drvn];
+
+                            if (drv == null)
+                            {
+                                var rgx2 = new Regex(drvn);
+
+                                var drvs = context.Host.ManualDrivers.FindDriver(rgx2).ToArray();
+
+                                switch (drvs.Length)
+                                {
+                                    case 0:
+                                        return new EvaluationResult(11, "No driver found matching the given mask.");
+
+                                    case 1:
+                                        drv = drvs[0];
+                                        break;
+
+                                    case 2:
+                                        var sb = new StringBuilder();
+
+                                        sb.AppendFormat("Found {0} drivers matching given mask:");
+
+                                        for (int j = 0; j < drvs.Length; j++)
+                                        {
+                                            sb.AppendLine();
+                                            sb.Append('\t');
+                                            sb.Append(j + 1);
+                                            sb.Append(": ");
+                                            sb.Append(drvs[i].Name);
+                                        }
+
+                                        return new EvaluationResult(12, sb.ToString());
+                                }
+                            }
+                        }
+                        else if (str.StartsWith("section="))
+                        {
+                            if (displayLocation != 0) return new EvaluationResult(4, string.Format("A display location was already specified before argument #{0}", i + 1));
+                            displayLocation = 4;
+
+                            var scss = str.Substring(8);
+
+                            if (scss.Length == 0)
+                                return new EvaluationResult(30, string.Format("Something must follow \"section=\" at argument #{0}", i + 1));
+
+                            var scsp = scss.Split('.');
+                            scsi = new int[scsp.Length];
+
+                            for (int j = 0; j < scsi.Length; j++)
+                            {
+                                int tmp = -1;
+
+                                if (!int.TryParse(scsp[j], out tmp))
+                                    return new EvaluationResult(31, string.Format("Section #{0} in argument #{1} is not an integer.", j + 1, i + 1));
+
+                                if (tmp < 1)
+                                    return new EvaluationResult(32, string.Format("Section #{0} in argument #{1} must be strictly positive.", j + 1, i + 1));
+
+                                scsi[j] = tmp - 1;  //  The command takes 1-based indexes; the inner representation is 0-based.
+                            }
+                        }
+
+                        break;
+                }
+            }
+
+            if (ll == 0)
+                return new EvaluationResult(5, "Must have at least one specified lookup location.");
+
+            //
+
+            Manual man = null;
+
+            if (ll == ManualLookupLocation.ManualTitle)
+                man = context.Host.Library[evalRes.Output];
+
+            if (man == null)
+            {
+                var mans = context.Host.Library.FindManual(rgx, ll).ToArray();
+
+                switch (mans.Length)
+                {
+                    case 0:
+                        return new EvaluationResult(20, "No manual(s) found matching the given arguments.");
+
+                    case 1:
+                        man = mans[0];
+                        break;
+
+                    default:
+                        var sb = new StringBuilder();
+
+                        sb.AppendFormat("Found {0} manuals matching given mask:", mans.Length);
+
+                        for (int i = 0; i < mans.Length; i++)
+                        {
+                            sb.AppendLine();
+                            sb.Append('\t');
+                            sb.Append(i + 1);
+                            sb.Append(": ");
+                            sb.Append(mans[i].Title);
+                        }
+
+                        return new EvaluationResult(21, sb.ToString());
+                }
+            }
+
+            switch (displayLocation)
+            {
+                case 1:
+                    return new EvaluationResult(0, man.Title);
+
+                case 2:
+                    return new EvaluationResult(0, man.Abstract);
+
+                case 3:
+                    var b = new StringBuilder();
+
+                    int i = 0;
+                    foreach (var s in man.Sections)
+                        ManualSections.indexSection(b, s, ++i, string.Empty, null, " ", ".");
+
+                    return new EvaluationResult(0, b.ToString());
+
+                case 4:
+                    var sc = man[scsi];
+
+                    if (sc == null)
+                        return new EvaluationResult(33, string.Format("Could not find the specified section in the manual."));
+
+                    return new EvaluationResult(0, sc.Body);
+
+                default:
+                    if (drv == null)
+                        return new EvaluationResult(10, "There is no driver to display the manual with.");
+
+                    return drv.Display(context, man);
+            }
+        }
     }
 }

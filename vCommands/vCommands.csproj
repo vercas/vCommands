@@ -50,6 +50,7 @@
     <Compile Include="Commands\Alias.cs" />
     <Compile Include="Commands\User Command.cs" />
     <Compile Include="Commands\Method.cs" />
+    <Compile Include="Default Manuals.cs" />
     <Compile Include="Evaluation Context.cs" />
     <Compile Include="Event Arguments\Contextually Cancellable Event Arguments.cs" />
     <Compile Include="Event Arguments\Host Variable Change.cs" />
@@ -59,11 +60,15 @@
     <Compile Include="Host.cs" />
     <Compile Include="Evaluation Result.cs" />
     <Compile Include="Commands\Command.cs" />
-    <Compile Include="Manual\Keyword.cs" />
-    <Compile Include="Manual\Library.cs" />
-    <Compile Include="Manual\Parser.cs" />
-    <Compile Include="Manual\Section.cs" />
-    <Compile Include="Manual\Manual.cs" />
+    <Compile Include="Manuals\Drivers\Driver Collection.cs" />
+    <Compile Include="Manuals\Drivers\IDriver.cs" />
+    <Compile Include="Manuals\Drivers\Output Driver.cs" />
+    <Compile Include="Manuals\Keyword.cs" />
+    <Compile Include="Manuals\Library.cs" />
+    <Compile Include="Manuals\Manual Lookup Locations.cs" />
+    <Compile Include="Manuals\Parser.cs" />
+    <Compile Include="Manuals\Section.cs" />
+    <Compile Include="Manuals\Manual.cs" />
     <Compile Include="Parsing\Expressions\Series Expression.cs" />
     <Compile Include="Parsing\Expressions\Conditional Expression.cs" />
     <Compile Include="Parsing\Expressions\Command Invocation Expression.cs" />
@@ -81,7 +86,7 @@
     <Compile Include="Default Commands.cs" />
     <Compile Include="Utilities\Event Handlers.cs" />
     <Compile Include="Utilities\Sealable.cs" />
-    <Compile Include="Utilities\Section Recursion Checking.cs" />
+    <Compile Include="Utilities\Manual Sections.cs" />
     <Compile Include="Utilities\Sorted List.cs" />
     <Compile Include="Variables\IVariable.cs" />
     <Compile Include="Variables\Synchronous Variable.cs" />
@@ -97,6 +102,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

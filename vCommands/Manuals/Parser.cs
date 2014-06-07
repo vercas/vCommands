@@ -6,7 +6,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace vCommands.Manual
+namespace vCommands.Manuals
 {
     /// <summary>
     /// Contains methods for parsing manuals.
@@ -14,7 +14,7 @@ namespace vCommands.Manual
     public static class Parser
     {
         /// <summary>
-        /// Parses a <see cref="vCommands.Manual.Manual"/> or a collection of <see cref="vCommands.Manual.Manual"/>s from the given XML document string.
+        /// Parses a <see cref="vCommands.Manuals.Manual"/> or a collection of <see cref="vCommands.Manuals.Manual"/>s from the given XML document string.
         /// </summary>
         /// <param name="xmlText"></param>
         /// <returns>An enumeration of manuals.</returns>
@@ -46,7 +46,7 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Parses a <see cref="vCommands.Manual.Manual"/> from the given <see cref="System.Xml.Linq.XElement"/>.
+        /// Parses a <see cref="vCommands.Manuals.Manual"/> from the given <see cref="System.Xml.Linq.XElement"/>.
         /// </summary>
         /// <param name="element"></param>
         /// <returns></returns>
@@ -78,7 +78,7 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Parses a <see cref="vCommands.Manual.Section"/> from the given <see cref="System.Xml.Linq.XElement"/>.
+        /// Parses a <see cref="vCommands.Manuals.Section"/> from the given <see cref="System.Xml.Linq.XElement"/>.
         /// </summary>
         /// <param name="element"></param>
         /// <returns></returns>

@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 
-namespace vCommands.Manual
+namespace vCommands.Manuals
 {
     using Utilities;
 
@@ -68,7 +68,7 @@ namespace vCommands.Manual
         #endregion
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="vCommands.Manual.Manual"/> class.
+        /// Initializes a new instance of the <see cref="vCommands.Manuals.Manual"/> class.
         /// </summary>
         public Manual()
         {
@@ -83,7 +83,7 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="vCommands.Manual.Manual"/> class with the specified title and abstract.
+        /// Initializes a new instance of the <see cref="vCommands.Manuals.Manual"/> class with the specified title and abstract.
         /// </summary>
         /// <param name="title">A suitable title to represent the subject of the manual.</param>
         /// <param name="abstr">A brief description of the subject of the manual.</param>
@@ -107,7 +107,7 @@ namespace vCommands.Manual
             if (sub == null)
                 throw new ArgumentNullException("sub");
 
-            if (SectionRecursionChecking.Check(this.subs, sub))
+            if (ManualSections.Check(this.subs, sub))
                 throw new ArgumentException("The given section is already found within the hierarchy of the manual.");
 
             if (subs.Where(s => s.Title == sub.Title).Any())
@@ -339,7 +339,7 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Determines whether the given <see cref="System.Object"/> is equal to the current <see cref="vCommands.Manual.Manual"/>.
+        /// Determines whether the given <see cref="System.Object"/> is equal to the current <see cref="vCommands.Manuals.Manual"/>.
         /// </summary>
         /// <param name="obj">The object to compare with the current manual.</param>
         /// <returns>true if the specified object is equal to the current manual; otherwise, false.</returns>
@@ -354,7 +354,7 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Determines whether the given <see cref="vCommands.Manual.Manual"/> is equal to the current <see cref="vCommands.Manual.Manual"/>.
+        /// Determines whether the given <see cref="vCommands.Manuals.Manual"/> is equal to the current <see cref="vCommands.Manuals.Manual"/>.
         /// </summary>
         /// <param name="obj">The manual to compare with the current manual.</param>
         /// <returns>true if the specified manual is equal to the current manual; otherwise, false.</returns>
@@ -367,9 +367,9 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Serves as a hash function for <see cref="vCommands.Manual.Manual"/>.
+        /// Serves as a hash function for <see cref="vCommands.Manuals.Manual"/>.
         /// </summary>
-        /// <returns>A hash code for the current <see cref="vCommands.Manual.Manual"/>.</returns>
+        /// <returns>A hash code for the current <see cref="vCommands.Manuals.Manual"/>.</returns>
         public override int GetHashCode()
         {
             base.GetHashCode();
@@ -420,5 +420,68 @@ namespace vCommands.Manual
         }
 
         #endregion
+
+        #region Lookup
+
+        /// <summary>
+        /// Retrieves the section at the given index from the manual.
+        /// </summary>
+        /// <remarks>
+        /// If any section is not found, it returns null.
+        /// </remarks>
+        /// <param name="indexes">Sequential indexes to look up for in the manual.</param>
+        /// <returns>A <see cref="vCommands.Manuals.Section"/> object if found; otherwise null.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown when the given indexes array is null.</exception>
+        /// <exception cref="System.ArgumentException">Thrown when the given indexes array does not contain at least one element.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the given indexes array contains a negative element.</exception>
+        public Section this[params int[] indexes]
+        {
+            get
+            {
+                if (indexes == null)
+                    throw new ArgumentNullException("indexes");
+
+                if (indexes.Length < 1)
+                    throw new ArgumentException("Given indexes array must have at least one element.");
+
+                Section sec = this.Sections[indexes[0]];
+
+                for (int i = 1; i < indexes.Length; i++)
+                {
+                    if (indexes[i] < 0)
+                        throw new ArgumentOutOfRangeException("Every index in the indexes array must be greated than or equal to 0.");
+
+                    if (indexes[i] >= sec.Subsections.Count)
+                        return null;
+
+                    sec = sec.Subsections[indexes[i]];
+                }
+
+                return sec;
+            }
+        }
+
+        internal bool IsMatch(System.Text.RegularExpressions.Regex mask, ManualLookupLocation ll)
+        {
+            //System.Diagnostics.Debug.WriteLine("Checking {0}:\n\t{1} | {2}", this, mask, ll);
+
+            if ((ll & ManualLookupLocation.ManualTitle) != 0)
+                if (mask.IsMatch(title))
+                    return true;
+
+            if ((ll & ManualLookupLocation.ManualAbstract) != 0)
+                if (mask.IsMatch(abstr))
+                    return true;
+
+            if ((ll & (ManualLookupLocation.SectionTitles | ManualLookupLocation.SectionBodies)) != 0)
+                if (subs.Where(s => s.IsMatch(mask, ll)).Any())
+                    return true;
+
+            return false;
+        }
+
+        #endregion
+
+
     }
 }

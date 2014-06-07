@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace vCommands.Manual
+namespace vCommands.Manuals
 {
     /// <summary>
-    /// Represents a collection of <see cref="vCommands.Manual.Manual"/>s.
+    /// Represents a collection of <see cref="vCommands.Manuals.Manual"/>s.
     /// </summary>
     public class Library
         : ICollection<Manual>
@@ -19,26 +19,58 @@ namespace vCommands.Manual
         /// <summary>
         /// Adds the given manual to the library.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="manual"></param>
         /// <exception cref="System.ArgumentNullException">Thrown when the given manual is null.</exception>
         /// <exception cref="System.ArgumentException">Thrown when the library already contains a manual with the title of the given one -or- the given manual's title is null.</exception>
         /// <exception cref="System.InvalidOperationException">Thrown when the given manual is not sealed.</exception>
         /// <exception cref="System.NotSupportedException">Thrown when the library is read-only.</exception>
-        public void Add(Manual item)
+        public void Add(Manual manual)
         {
-            if (item == null)
-                throw new ArgumentNullException("item");
+            if (manual == null)
+                throw new ArgumentNullException("manual");
 
-            if (item.Title == null)
+            if (manual.Title == null)
                 throw new ArgumentException("The given manual's title is null.");
 
-            if (!item.Sealed)
+            if (!manual.Sealed)
                 throw new InvalidOperationException("Added manual must be sealed.");
 
-            if (mans.ContainsKey(item.Title))
+            if (mans.ContainsKey(manual.Title))
                 throw new ArgumentException("The library already contains a manual with the same title.");
 
-            mans.Add(item.Title, item);
+            mans.Add(manual.Title, manual);
+        }
+
+        /// <summary>
+        /// Adds every manual in the given enumeration to the library.
+        /// </summary>
+        /// <param name="manuals"></param>
+        /// <exception cref="System.ArgumentNullException">Thrown when the given enumeration is null.</exception>
+        /// <exception cref="System.ArgumentException">Thrown when the library already contains a manual with the title of a given one -or- a given manual's title is null.</exception>
+        /// <exception cref="System.InvalidOperationException">Thrown when a given manual is not sealed.</exception>
+        /// <exception cref="System.NotSupportedException">Thrown when the library is read-only.</exception>
+        public void Add(IEnumerable<Manual> manuals)
+        {
+            if (manuals == null)
+                throw new ArgumentNullException("manuals");
+
+            int i = 0;
+
+            foreach (var item in manuals)
+            {
+                if (item.Title == null)
+                    throw new ArgumentException(string.Format("Manual at index {0} has a null title.", i));
+
+                if (!item.Sealed)
+                    throw new InvalidOperationException(string.Format("Manual at index {0} must be sealed.", i));
+
+                if (mans.ContainsKey(item.Title))
+                    throw new ArgumentException(string.Format("Library already contains a manual with the title of that at index {0}.", i));
+
+                mans.Add(item.Title, item);
+
+                i++;
+            }
         }
 
         /// <summary>
@@ -53,33 +85,33 @@ namespace vCommands.Manual
         /// <summary>
         /// Determines whether the library contains the given manual specifically.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="manual"></param>
         /// <returns>True if the specific manual is contained within the library; otherwise false.</returns>
         /// <exception cref="System.ArgumentNullException">Thrown when the given manual is null.</exception>
         /// <exception cref="System.ArgumentException">Thrown when the given manual's title is null.</exception>
-        public bool Contains(Manual item)
+        public bool Contains(Manual manual)
         {
-            if (item == null)
-                throw new ArgumentNullException("item");
+            if (manual == null)
+                throw new ArgumentNullException("manual");
 
-            if (item.Title == null)
+            if (manual.Title == null)
                 throw new ArgumentException("The given manual's title is null.");
 
-            return mans.Contains(new KeyValuePair<string, Manual>(item.Title, item));
+            return mans.Contains(new KeyValuePair<string, Manual>(manual.Title, manual));
         }
 
         /// <summary>
         /// Determines whether the library contains a manual with the given title.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="title"></param>
         /// <returns>True if a manual with the specific title is contained within the library; otherwise false.</returns>
         /// <exception cref="System.ArgumentNullException">Thrown when the given title is null.</exception>
-        public bool Contains(string item)
+        public bool Contains(string title)
         {
-            if (item == null)
-                throw new ArgumentNullException("item");
+            if (title == null)
+                throw new ArgumentNullException("title");
 
-            return mans.ContainsKey(item);
+            return mans.ContainsKey(title);
         }
 
         /// <summary>
@@ -114,31 +146,45 @@ namespace vCommands.Manual
         /// <summary>
         /// Removes the specific manual from the library.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="manual"></param>
         /// <returns>True if the specific manual was found and removed; false if not found.</returns>
         /// <exception cref="System.ArgumentNullException">Thrown when the given manual is null.</exception>
         /// <exception cref="System.ArgumentException">Thrown when the given manual's title is null.</exception>
-        public bool Remove(Manual item)
+        public bool Remove(Manual manual)
         {
-            if (item == null)
-                throw new ArgumentNullException("item");
+            if (manual == null)
+                throw new ArgumentNullException("manual");
 
-            if (item.Title == null)
+            if (manual.Title == null)
                 throw new ArgumentException("The given manual's title is null.");
 
             Manual temp = null;
 
-            if (!mans.TryGetValue(item.Title, out temp))
+            if (!mans.TryGetValue(manual.Title, out temp))
                 return false;
 
-            if (item == temp)
+            if (manual == temp)
             {
-                mans.Remove(item.Title);
+                mans.Remove(manual.Title);
 
                 return true;
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Removes the manual with the specified title from the library.
+        /// </summary>
+        /// <param name="title"></param>
+        /// <returns>True if found and removed; false if not found</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown when the given title string is null.</exception>
+        public bool Remove(string title)
+        {
+            if (title == null)
+                throw new ArgumentNullException("title");
+
+            return mans.Remove(title);
         }
 
         #endregion
@@ -171,7 +217,7 @@ namespace vCommands.Manual
         /// Retrieves the manual with the given title.
         /// </summary>
         /// <param name="title"></param>
-        /// <returns>A <see cref="vCommands.Manual.Manual"/> object if found; otherwise null.</returns>
+        /// <returns>A <see cref="vCommands.Manuals.Manual"/> object if found; otherwise null.</returns>
         /// <exception cref="System.ArgumentNullException">Thrown when the given title is null.</exception>
         public Manual this[string title]
         {
@@ -197,7 +243,7 @@ namespace vCommands.Manual
         /// </remarks>
         /// <param name="title"></param>
         /// <param name="indexes">Sequential indexes to look up for in the manual.</param>
-        /// <returns>A <see cref="vCommands.Manual.Section"/> object if found; otherwise null.</returns>
+        /// <returns>A <see cref="vCommands.Manuals.Section"/> object if found; otherwise null.</returns>
         /// <exception cref="System.ArgumentNullException">Thrown when the given title or indexes array is null.</exception>
         /// <exception cref="System.ArgumentException">Thrown when the given indexes array does not contain at least one element.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the given indexes array contains a negative element.</exception>
@@ -218,21 +264,27 @@ namespace vCommands.Manual
                 if (!mans.TryGetValue(title, out res))
                     return null;
 
-                Section sec = res.Sections[indexes[0]];
-
-                for (int i = 1; i < indexes.Length; i++)
-                {
-                    if (indexes[i] < 0)
-                        throw new ArgumentOutOfRangeException("Every index in the indexes array must be greated than or equal to 0.");
-
-                    if (indexes[i] >= sec.Subsections.Count)
-                        return null;
-
-                    sec = sec.Subsections[indexes[i]];
-                }
-
-                return sec;
+                return res[indexes];
             }
+        }
+
+        /// <summary>
+        /// Finds a manual by matching specific elements against a regular expression.
+        /// </summary>
+        /// <param name="mask"></param>
+        /// <param name="lookupLocation">A set of flags containing elements to look up.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentNullException">Thrown when the given regular expression is null.</exception>
+        /// <exception cref="System.ArgumentException">Thrown when the given lookup location set does not contain any location (is 0).</exception>
+        public IEnumerable<Manual> FindManual(Regex mask, ManualLookupLocation lookupLocation = ManualLookupLocation.ManualTitle)
+        {
+            if (mask == null)
+                throw new ArgumentNullException("mask");
+
+            if (lookupLocation == 0)
+                throw new ArgumentException("There must be at least one lookup location.", "lookupLocation");
+
+            return mans.Values.Where(m => m.IsMatch(mask, lookupLocation));
         }
 
         #endregion

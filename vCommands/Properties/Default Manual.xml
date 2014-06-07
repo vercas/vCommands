@@ -1,11 +1,88 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <manuals>
     <manual title="man">
-        <abstract>This manual explains the usage of the "man" command and how to read and interpret vCommand manuals.</abstract>
+        <abstract>This manual explains the usage of the "man" command, how to read and interpret vCommand manuals and how to use related features.</abstract>
         
-        <section title="Command Parameters">
-            <body>Hodor, hodor hodor hodor, hodor hodor hodor hodor hodor hodor. Hodor hodor hodor hodor, hodor hodor Hodor hodor hodor hodor hodor hodor hodor hodor,
-hodor Hodor hodor hodor hodor hodor hodor. Hodor Hodor, hodor, hodor hodor hodor hodor hodor hodor hodor.</body>
+        <section title="Command Arguments">
+            <body>The first argument to the command is a title or a regular expression.
+If any manual has that exact title, it is instantly returned. (of course, assumming that the title is included in the lookup location)
+
+Otherwise, the argument is treated as a regular exception and checked against different parts of the manual, determined by the flags documented in section 1.1.
+
+If only part of a manual is needeed, such as title, abstract or index, other flags are available, documented in section 1.2.
+
+A custom driver (section 2) can be specified using an argument documented in section 1.3.</body>
+        
+            <section title="Lookup Location Flags">
+                <body>To allow more flexible lookups, man provides the choice of where to look at in a manual.
+A set of flags which can be specified individually in parameters is used for this.
+
+The overall set of flags must indicate at least one part to look at.
+
+The following flags are available:
+nomt - Exclude manual titles from lookup.
+ma   - Include manual abstracts in lookup.
+st   - Include section titles in lookup.
+sb   - Include section bodies in lookup.</body>
+            </section>
+        
+            <section title="Displayed Information Flags">
+                <body>Should only part of a manual be needed, this can be requested through the presence of a flag.
+Only one such flag may be present.
+Their absence means the whole manual will be displayed using a driver.
+
+The following flags are available:
+jt - Just the title will be displayed.
+ja - Just the abstract will be displayed.
+ji - Just the index will be displayed.</body>
+            </section>
+        
+            <section title="Extra Choices">
+                <body>A few more arguments can be specified for extra choices.
+
+    driver=
+If an argument starting with "driver=" is specified, everything after it is used as a name or regular expression to find a driver.
+
+    section=
+If an argument starting with "section=" is specified, the body of the specified section will be outputted.
+(Sub-)Sections are separated by a "." (dot).</body>
+            </section>
+        </section>
+        
+        <section title="Drivers">
+            <body>A driver is in charge of displaying the manual to the user.
+vCommands includes an output driver by default, which outputs the manual from the man command in an easily-readable way.
+
+To find which drivers are available, the following command can be executed:
+man . driver=.*
+(note: the first . (dot) can be anything)
+If this does not return error code 20 or 21, it means there is only one driver available.
+An error code of 21 would also display all drivers' names. Error code 20 would mean there is no driver at all, rendering this command unable to display manuals.</body>
+        </section>
+        
+        <section title="Status Codes">
+            <body>The following are the status codes returned by the command and their meaning:
+
+0   - No erroneous situation.
+
+1   - Not enough arguments (at least one is required).
+2   - First argument failed to evaluate.
+3   - An argument (other than the first) failed to evaluate.
+4   - More than one display information flag is present.
+5   - Lookup location flags excluded all locations.
+
+10  - No driver to display manual with (none specified and/or no default).
+11  - No driver found matching given mask.
+12  - More than one driver matches given mask.
+13  - Nothing specified after "driver=".
+
+20  - No manual found matching given mask with given lookup location(s).
+21  - More than one manual matches given mask with given lookup location(s).
+
+30  - Nothin specified after "section=".
+31  - Specified section is not a set of number separated by dots.
+32  - A section index is 0 or negative.
+33  - A specified (sub-)section does not exist.</body>
         </section>
     </manual>
 </manuals>

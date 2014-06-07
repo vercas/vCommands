@@ -5,9 +5,9 @@ using System.Text;
 
 namespace vCommands.Utilities
 {
-    using Manual;
+    using Manuals;
 
-    internal class SectionRecursionChecking
+    internal class ManualSections
     {
         public static bool Check(Section initial, Section target)
         {
@@ -29,6 +29,24 @@ namespace vCommands.Utilities
             }
 
             return false;
+        }
+
+        public static void indexSection(StringBuilder b, Section s, int i, string p, IDictionary<Section, string> d, string SectionTitlesSeparator, string SectionIndexesSeparator)
+        {
+            b.Append(p);
+            b.Append(i);
+            b.Append(SectionTitlesSeparator);
+            b.AppendLine(s.Title);
+
+            if (d != null)
+                d[s] = p + i;
+
+            p += i.ToString() + SectionIndexesSeparator;
+
+            int j = 0;
+
+            foreach (var s2 in s.Subsections)
+                indexSection(b, s2, ++j, p, d, SectionTitlesSeparator, SectionIndexesSeparator);
         }
     }
 }

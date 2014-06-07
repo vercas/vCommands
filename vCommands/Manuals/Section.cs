@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 
-namespace vCommands.Manual
+namespace vCommands.Manuals
 {
     using Utilities;
 
@@ -68,7 +68,7 @@ namespace vCommands.Manual
         #endregion
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="vCommands.Manual.Section"/> class.
+        /// Initializes a new instance of the <see cref="vCommands.Manuals.Section"/> class.
         /// </summary>
         public Section()
         {
@@ -77,7 +77,7 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="vCommands.Manual.Section"/> class with the specified title and body.
+        /// Initializes a new instance of the <see cref="vCommands.Manuals.Section"/> class with the specified title and body.
         /// </summary>
         /// <param name="title"></param>
         /// <param name="body"></param>
@@ -104,9 +104,9 @@ namespace vCommands.Manual
             if (sub == this)
                 throw new ArgumentException("Cannot add the current section as subsection to itself.");
 
-            if (SectionRecursionChecking.Check(sub, this))
+            if (ManualSections.Check(sub, this))
                 throw new ArgumentException("The current section is already found within the subsection hierarchy of the given section.");
-            if (SectionRecursionChecking.Check(this, sub))
+            if (ManualSections.Check(this, sub))
                 throw new ArgumentException("The given section is already found within the subsection hierarchy of the current section.");
 
             if (subs.Where(s => s.title == sub.title).Any())
@@ -193,7 +193,7 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Determines whether the given <see cref="System.Object"/> is equal to the current <see cref="vCommands.Manual.Section"/>.
+        /// Determines whether the given <see cref="System.Object"/> is equal to the current <see cref="vCommands.Manuals.Section"/>.
         /// </summary>
         /// <param name="obj">The object to compare with the current section.</param>
         /// <returns>true if the specified object is equal to the current section; otherwise, false.</returns>
@@ -208,7 +208,7 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Determines whether the given <see cref="vCommands.Manual.Section"/> is equal to the current <see cref="vCommands.Manual.Section"/>.
+        /// Determines whether the given <see cref="vCommands.Manuals.Section"/> is equal to the current <see cref="vCommands.Manuals.Section"/>.
         /// </summary>
         /// <param name="obj">The section to compare with the current section.</param>
         /// <returns>true if the specified section is equal to the current section; otherwise, false.</returns>
@@ -221,9 +221,9 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Serves as a hash function for <see cref="vCommands.Manual.Section"/>.
+        /// Serves as a hash function for <see cref="vCommands.Manuals.Section"/>.
         /// </summary>
-        /// <returns>A hash code for the current <see cref="vCommands.Manual.Section"/>.</returns>
+        /// <returns>A hash code for the current <see cref="vCommands.Manuals.Section"/>.</returns>
         public override int GetHashCode()
         {
             base.GetHashCode();
@@ -271,6 +271,26 @@ namespace vCommands.Manual
         public override string ToString()
         {
             return string.Format("[Section{0} {1} ({2} subsections) | {3}]", this.Sealed ? " (SEALED):" : ":", this.title ?? "-NULL T-", this.subsro.Count, this.body == null ? "-NULL B-" : (this.body.Length > 50 ? (this.body.Substring(0, 47) + "...") : this.body));
+        }
+
+        #endregion
+
+        #region Lookup
+
+        internal bool IsMatch(System.Text.RegularExpressions.Regex mask, ManualLookupLocation ll)
+        {
+            if ((ll & ManualLookupLocation.SectionTitles) != 0)
+                if (mask.IsMatch(title))
+                    return true;
+
+            if ((ll & ManualLookupLocation.SectionBodies) != 0)
+                if (mask.IsMatch(body))
+                    return true;
+
+            if (subs.Where(s => s.IsMatch(mask, ll)).Any())
+                return true;
+
+            return false;
         }
 
         #endregion

@@ -172,3 +172,7 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
+
+# The Batch file for creating release archives
+archive.bat
+Releases/

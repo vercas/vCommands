@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace vCommands.Manual
+namespace vCommands.Manuals
 {
     using Utilities;
 
@@ -54,7 +54,7 @@ namespace vCommands.Manual
         #endregion
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="vCommands.Manual.Keyword"/> class.
+        /// Initializes a new instance of the <see cref="vCommands.Manuals.Keyword"/> class.
         /// </summary>
         public Keyword()
         {
@@ -64,7 +64,7 @@ namespace vCommands.Manual
         #region Overrides
 
         /// <summary>
-        /// Determines whether the given <see cref="System.Object"/> is equal to the current <see cref="vCommands.Manual.Keyword"/>.
+        /// Determines whether the given <see cref="System.Object"/> is equal to the current <see cref="vCommands.Manuals.Keyword"/>.
         /// </summary>
         /// <param name="obj">The object to compare with the current keyword.</param>
         /// <returns>true if the specified object is equal to the current keyword; otherwise, false.</returns>
@@ -79,7 +79,7 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Determines whether the given <see cref="vCommands.Manual.Keyword"/> is equal to the current <see cref="vCommands.Manual.Keyword"/>.
+        /// Determines whether the given <see cref="vCommands.Manuals.Keyword"/> is equal to the current <see cref="vCommands.Manuals.Keyword"/>.
         /// </summary>
         /// <param name="obj">The keyword to compare with the current keyword.</param>
         /// <returns>true if the specified keyword is equal to the current keyword; otherwise, false.</returns>
@@ -92,9 +92,9 @@ namespace vCommands.Manual
         }
 
         /// <summary>
-        /// Serves as a hash function for <see cref="vCommands.Manual.Keyword"/>.
+        /// Serves as a hash function for <see cref="vCommands.Manuals.Keyword"/>.
         /// </summary>
-        /// <returns>A hash code for the current <see cref="vCommands.Manual.Keyword"/>.</returns>
+        /// <returns>A hash code for the current <see cref="vCommands.Manuals.Keyword"/>.</returns>
         public override int GetHashCode()
         {
             base.GetHashCode();

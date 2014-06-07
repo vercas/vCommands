@@ -8,6 +8,8 @@ namespace vCommands
     using Commands;
     using Parsing;
     using Variables;
+    using Manuals;
+    using Manuals.Drivers;
     using EventArguments;
     using Utilities;
 
@@ -23,11 +25,22 @@ namespace vCommands
         private object cmds_locker = new object(), vars_locker = new object();
 
         /// <summary>
+        /// Gets the library of manuals for this host.
+        /// </summary>
+        public Library Library { get; internal set; }
+
+        /// <summary>
+        /// Gets a collection of manual drivers for this host.
+        /// </summary>
+        public DriverCollection ManualDrivers { get; internal set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="vCommands.CommandHost"/> class.
         /// </summary>
         public CommandHost()
         {
-            
+            Library = new Library();
+            ManualDrivers = new DriverCollection();
         }
 
         #region Commands
@@ -140,17 +153,18 @@ namespace vCommands
             if (command == null)
                 throw new ArgumentNullException("command");
 
-            return Parser.Parse(command).Evaluate(new EvaluationContext(this));
+            return Parsing.Parser.Parse(command).Evaluate(new EvaluationContext(this));
         }
 
         /// <summary>
         /// Registers a default set of commands to the host.
         /// </summary>
-        public void RegisterDefaultCommands()
+        public void RegisterDefaultCommands(bool includeManual = true)
         {
-            DefaultCommands.Register(this);
+            DefaultCommands.Register(this, includeManual);
 
-            Manual.Parser.ParseXML(Properties.Resources.default_manual).ToArray();
+            if (includeManual)
+                DefaultManuals.Register(Library, ManualDrivers);
         }
 
         #endregion
