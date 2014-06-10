@@ -1203,6 +1203,43 @@ namespace vCommands
             return new EvaluationResult(0, evalRes.Output.Substring(bounds[0], bounds[1]));
         }
 
+        [MethodCommandData(abstr: "Formats the given first argument with the other arguments.")]
+        static EvaluationResult format(bool? toggle, EvaluationContext context, Expression[] args)
+        {
+            if (args.Length < 1)
+                return new EvaluationResult(1, "'format' must be given at least one argument: a format string.");
+
+            var evalRes = args[0].Evaluate(context);
+
+            if (!evalRes.TruthValue)
+                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+
+            var format = evalRes.Output;
+
+            var frmargs = new object[args.Length - 1];
+
+            for (int i = 1; i < args.Length; i++)
+            {
+                evalRes = args[i].Evaluate(context);
+
+                if (!evalRes.TruthValue)
+                    return new EvaluationResult(3, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+
+                frmargs[i - 1] = evalRes.Output;
+            }
+
+            try
+            {
+                format = string.Format(format, frmargs);
+            }
+            catch (FormatException x)
+            {
+                return new EvaluationResult(4, string.Format("There is an issue with the format string: {0}", x.Message));
+            }
+
+            return new EvaluationResult(0, format);
+        }
+
         #endregion
 
         #region Variables

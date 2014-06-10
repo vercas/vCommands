@@ -29,12 +29,18 @@ namespace vCommands
         public Dictionary<string, string> Locals { get; internal set; }
 
         /// <summary>
+        /// Gets an object representing the sate of the evaluation.
+        /// </summary>
+        public Object State { get; internal set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="vCommands.EvaluationContext"/> class with the specified status and output.
         /// </summary>
         /// <param name="host">The <see cref="vCommands.CommandHost"/> under which the evaluation occurs.</param>
         /// <param name="userArguments">optional; An list of expressions as arguments to a user command.</param>
         /// <param name="locals">optional; A list of local variables (pairs of names and values).</param>
-        public EvaluationContext(CommandHost host, IList<Expression> userArguments = null, IDictionary<string, string> locals = null)
+        /// <param name="state">optional; Object representing the state of the evaluation.</param>
+        public EvaluationContext(CommandHost host, IList<Expression> userArguments = null, IDictionary<string, string> locals = null, object state = null)
         {
             if (host == null)
                 throw new ArgumentNullException("host");
@@ -48,10 +54,12 @@ namespace vCommands
                 Locals = new Dictionary<string, string>();
             else
                 Locals = new Dictionary<string, string>(locals);
+
+            this.State = state;
         }
 
         /// <summary>
-        /// Creates a new <see cref="vCommands.EvaluationContext"/> with the properties of the current one, but with the given user argument list.
+        /// Creates a new <see cref="vCommands.EvaluationContext"/> with the properties of the current one, but with the given user argument list and no locals.
         /// </summary>
         /// <param name="userArguments">A list of expressions as arguments to a user command.</param>
         /// <returns></returns>
@@ -61,7 +69,10 @@ namespace vCommands
             if (userArguments == null)
                 throw new ArgumentNullException("userArguments");
 
-            return new EvaluationContext(this.Host, userArguments);
+            return new EvaluationContext(this.Host, userArguments, null, this.State);
+
+            //  I feel this is very wrong.
+            //  Contrary to the name of the function, locals are erased. They shan't transfer to user commands.
         }
 
         /// <summary>
@@ -78,7 +89,7 @@ namespace vCommands
             if (value == null)
                 throw new ArgumentNullException("value");
 
-            var ret = new EvaluationContext(this.Host, this.UserArguments, this.Locals);
+            var ret = new EvaluationContext(this.Host, this.UserArguments, this.Locals, this.State);
             ret.Locals[name] = value;
 
             return ret;
@@ -96,7 +107,7 @@ namespace vCommands
             if (locals == null)
                 throw new ArgumentNullException("locals");
 
-            var ret = new EvaluationContext(this.Host, this.UserArguments, this.Locals);
+            var ret = new EvaluationContext(this.Host, this.UserArguments, this.Locals, this.State);
 
             foreach (var l in locals)
             {

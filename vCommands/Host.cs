@@ -145,15 +145,20 @@ namespace vCommands
         /// <summary>
         /// Evaluates the given command string and returns the result.
         /// </summary>
+        /// <remarks>
+        /// The "state" parameter will be preserved in the evaluation context.
+        /// <para>This will allow a user to, for example, have a command perform based on a user's credentials passed through this parameter.</para>
+        /// </remarks>
         /// <param name="command"></param>
+        /// <param name="state">An object representing the state of the evaluation.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException">Thrown when the given command string is null.</exception>
-        public EvaluationResult Evaluate(string command)
+        public EvaluationResult Evaluate(string command, object state = null)
         {
             if (command == null)
                 throw new ArgumentNullException("command");
 
-            return Parsing.Parser.Parse(command).Evaluate(new EvaluationContext(this));
+            return Parsing.Parser.Parse(command).Evaluate(new EvaluationContext(this, state: state));
         }
 
         /// <summary>
