@@ -231,20 +231,37 @@ namespace vCommands
             Commands = all.ToArray();
         }
 
-        public static void Register(CommandHost host, bool includeManual)
+        public static void Register(CommandHost host, bool includeManual, bool includeMath)
         {
-            if (includeManual)
-                for (int i = 0; i < Commands.Length; i++)
-                    host.RegisterCommand(Commands[i]);
-            else
-                for (int i = 0; i < Commands.Length; i++)
-                    if (Commands[i].Name != "man")
-                        host.RegisterCommand(Commands[i]);
+            for (int i = 0; i < Commands.Length; i++)
+            {
+                var c = Commands[i];
+
+                if (c.Name == "man" && !includeManual)
+                    continue;
+
+                if (!includeMath)
+                {
+                    if (c.Category == "Mathematics")
+                        continue;
+
+                    switch (c.Name)
+                    {
+                        case "lt":
+                        case "lteq":
+                        case "gt":
+                        case "gteq":
+                            continue;
+                    }
+                }
+
+                host.RegisterCommand(c);
+            }
         }
 
         //  And now, the commands.
 
-        [MethodCommandData(abstr: "Displays every available command and its description.")]
+        [MethodCommandData(Abstract = "Displays every available command and its description.")]
         static EvaluationResult help(bool? toggle, EvaluationContext context, Expression[] args)
         {
             IEnumerable<KeyValuePair<string, Command>> cmds = context.Host.cmds;
@@ -335,7 +352,7 @@ namespace vCommands
             return new EvaluationResult(0, ob.ToString());
         }
 
-        [MethodCommandData(abstr: "Returns the given input arguments, separated by a tabulator.")]
+        [MethodCommandData(Abstract = "Returns the given input arguments, separated by a tabulator.")]
         static EvaluationResult echo(bool? toggle, EvaluationContext context, Expression[] args)
         {
             string output;
@@ -350,7 +367,7 @@ namespace vCommands
             return new EvaluationResult(0, output);
         }
 
-        [MethodCommandData(abstr: "Evaluates the given arguments to the last or until one returns non-zero status.")]
+        [MethodCommandData(Abstract = "Evaluates the given arguments to the last or until one returns non-zero status.")]
         static EvaluationResult eval(bool? toggle, EvaluationContext context, Expression[] args)
         {
             StringBuilder ob = new StringBuilder(4096);
@@ -374,7 +391,7 @@ namespace vCommands
             return new EvaluationResult(status, ob.ToString());
         }
 
-        [MethodCommandData(abstr: "Repeats a command for a number of times.")]
+        [MethodCommandData(Abstract = "Repeats a command for a number of times.")]
         static EvaluationResult repeat(bool? toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 2)
@@ -425,7 +442,7 @@ namespace vCommands
             }
         }
 
-        [MethodCommandData(name: "for", abstr: "Repeats a command for a number of times.")]
+        [MethodCommandData(Name = "for", Abstract = "Repeats a command for a number of times.")]
         static EvaluationResult for_loop(bool? toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 4 && args.Length != 5)
@@ -512,7 +529,7 @@ namespace vCommands
             }
         }
 
-        [MethodCommandData(abstr: "Retrieves a local value from the evaluation context.")]
+        [MethodCommandData(Abstract = "Retrieves a local value from the evaluation context.")]
         static EvaluationResult local(bool? toggle, EvaluationContext context, Expression[] args)
         {
             switch (toggle)
@@ -578,7 +595,7 @@ namespace vCommands
             }
         }
 
-        [MethodCommandData(abstr: "Evaluates an expression with some local values.")]
+        [MethodCommandData(Abstract = "Evaluates an expression with some local values.")]
         static EvaluationResult with(bool? toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length < 3 || args.Length % 2 != 1)
@@ -614,7 +631,7 @@ namespace vCommands
 
         #region User-defined commands and aliases
 
-        [MethodCommandData(abstr: "Creates a named alias for an expression.")]
+        [MethodCommandData(Abstract = "Creates a named alias for an expression.")]
         static EvaluationResult alias(bool? toggle, EvaluationContext context, Expression[] args)
         {
             switch (toggle)
@@ -648,7 +665,7 @@ namespace vCommands
                     if (context.Host.RegisterCommand(als1, false, false))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given name: {0}", evalRes.Output));
+                        return new EvaluationResult(3, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
 
                 case true:
                     var als2 = new Alias(evalRes.Output, args[1].ToString());
@@ -662,11 +679,11 @@ namespace vCommands
                     if (context.Host.RemoveCommand(evalRes.Output))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given name: {0}", evalRes.Output));
+                        return new EvaluationResult(3, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
             }
         }
 
-        [MethodCommandData(abstr: "Creates a named command which can accept arguments.")]
+        [MethodCommandData(Abstract = "Creates a named command which can accept arguments.")]
         static EvaluationResult define(bool? toggle, EvaluationContext context, Expression[] args)
         {
             switch (toggle)
@@ -700,7 +717,7 @@ namespace vCommands
                     if (context.Host.RegisterCommand(als1, false, false))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given name: {0}", evalRes.Output));
+                        return new EvaluationResult(3, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
 
                 case true:
                     var als2 = new UserCommand(evalRes.Output, args[1]);
@@ -708,18 +725,18 @@ namespace vCommands
                     if (context.Host.RegisterCommand(als2, true, true))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given name: {0}", evalRes.Output));
+                        return new EvaluationResult(3, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
 
                 default:
                     if (context.Host.RemoveCommand(evalRes.Output))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given name: {0}", evalRes.Output));
+                        return new EvaluationResult(3, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
             }
 
         }
 
-        [MethodCommandData(abstr: "Retrieves a user argument from the evaluation context for a user-defined function.")]
+        [MethodCommandData(Abstract = "Retrieves a user argument from the evaluation context for a user-defined function.")]
         static EvaluationResult arg(bool? toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 1)
@@ -745,7 +762,7 @@ namespace vCommands
             return context.UserArguments[i - 1].Evaluate(context);
         }
 
-        [MethodCommandData(abstr: "Retrieves the number of user arguments from the execution context for a user-defined function.")]
+        [MethodCommandData(Abstract = "Retrieves the number of user arguments from the execution context for a user-defined function.")]
         static EvaluationResult argc(bool? toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 0)
@@ -869,7 +886,7 @@ namespace vCommands
             return a > b;
         }
 
-        [MethodCommandData(abstr: "Generates a random number.")]
+        [MethodCommandData(Abstract = "Generates a random number.")]
         static EvaluationResult rand(bool? toggle, EvaluationContext context, Expression[] args)
         {
             if (rnd == null)
@@ -920,7 +937,7 @@ namespace vCommands
             }
         }
 
-        [MethodCommandData(category: "Mathematics", abstr: "Adds the given arguments together, converting input to numbers.")]
+        [MethodCommandData(Category = "Mathematics", Abstract = "Adds the given arguments together, converting input to numbers.")]
         static EvaluationResult add(bool? toggle, EvaluationContext context, Expression[] args)
         {
             decimal res = 0m;
@@ -946,7 +963,7 @@ namespace vCommands
             return new EvaluationResult(0, res.ToString());
         }
 
-        [MethodCommandData(category: "Mathematics", abstr: "Subtracts from the first argument the values of the other arguments, converting input to numbers.")]
+        [MethodCommandData(Category = "Mathematics", Abstract = "Subtracts from the first argument the values of the other arguments, converting input to numbers.")]
         static EvaluationResult sub(bool? toggle, EvaluationContext context, Expression[] args)
         {
             decimal res = 0m;
@@ -977,7 +994,7 @@ namespace vCommands
             return new EvaluationResult(0, res.ToString());
         }
 
-        [MethodCommandData(category: "Mathematics", abstr: "Multiplies the given arguments together, converting input to numbers.")]
+        [MethodCommandData(Category = "Mathematics", Abstract = "Multiplies the given arguments together, converting input to numbers.")]
         static EvaluationResult mul(bool? toggle, EvaluationContext context, Expression[] args)
         {
             decimal res = 1m;
@@ -1003,7 +1020,7 @@ namespace vCommands
             return new EvaluationResult(0, res.ToString());
         }
 
-        [MethodCommandData(category: "Mathematics", abstr: "Divides the first argument by the values of the other arguments, converting input to numbers.")]
+        [MethodCommandData(Category = "Mathematics", Abstract = "Divides the first argument by the values of the other arguments, converting input to numbers.")]
         static EvaluationResult div(bool? toggle, EvaluationContext context, Expression[] args)
         {
             decimal res = 1m;
@@ -1034,7 +1051,7 @@ namespace vCommands
             return new EvaluationResult(0, res.ToString());
         }
 
-        [MethodCommandData(category: "Mathematics", abstr: "Outputs the rounded value of the given input number..")]
+        [MethodCommandData(Category = "Mathematics", Abstract = "Outputs the rounded value of the given input number..")]
         static EvaluationResult round(bool? toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 1 && args.Length != 2)
@@ -1068,7 +1085,7 @@ namespace vCommands
             return new EvaluationResult(0, Math.Round(d, digits).ToString());
         }
 
-        [MethodCommandData(category: "Comparison", abstr: "Determines whether all given arguments are equal.")]
+        [MethodCommandData(Category = "Comparison", Abstract = "Determines whether all given arguments are equal.")]
         static EvaluationResult eq(bool? toggle, EvaluationContext context, Expression[] args)
         {
             bool restrictive = !toggle.HasValue || !toggle.Value;
@@ -1116,7 +1133,7 @@ namespace vCommands
             }
         }
 
-        [MethodCommandData(category: "Comparison", abstr: "Determines whether the two given arguments.")]
+        [MethodCommandData(Category = "Comparison", Abstract = "Determines whether the two given arguments.")]
         static EvaluationResult neq(bool? toggle, EvaluationContext context, Expression[] args)
         {
             bool restrictive = !toggle.HasValue || !toggle.Value;
@@ -1162,7 +1179,7 @@ namespace vCommands
 
         #region Strings
 
-        [MethodCommandData(abstr: "Extracts a substring from a string.")]
+        [MethodCommandData(Abstract = "Extracts a substring from a string.")]
         static EvaluationResult subs(bool? toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 3)
@@ -1203,7 +1220,7 @@ namespace vCommands
             return new EvaluationResult(0, evalRes.Output.Substring(bounds[0], bounds[1]));
         }
 
-        [MethodCommandData(abstr: "Formats the given first argument with the other arguments.")]
+        [MethodCommandData(Abstract = "Formats the given first argument with the other arguments.")]
         static EvaluationResult format(bool? toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length < 1)
@@ -1244,7 +1261,7 @@ namespace vCommands
 
         #region Variables
 
-        [MethodCommandData(abstr: "Retrieves the value of a variable from the host.")]
+        [MethodCommandData(Abstract = "Retrieves the value of a variable from the host.")]
         static EvaluationResult cvar(bool? toggle, EvaluationContext context, Expression[] args)
         {
             switch (toggle)
@@ -1306,7 +1323,7 @@ namespace vCommands
 
         #endregion
 
-        [MethodCommandData(abstr: "Searches for a manual in the library by title.")]
+        [MethodCommandData(Abstract = "Searches for a manual in the library by title.")]
         static EvaluationResult man(bool? toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length < 1)

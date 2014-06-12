@@ -20,20 +20,24 @@ namespace vCommands.Utilities
         /// Attempts to turn all suitable static methods from the given type into commands.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="includePrivate">True to include private methods in the search; otherwise false.</param>
+        /// <param name="includePrivate">optional; True to include private methods in the search; otherwise false.</param>
+        /// <param name="prefix">optional; A prefix to add to all command names.</param>
+        /// <param name="forcedCategory">optional; The category in which to place the commands, regardless of their setting. Null means the method's attributed category is used.</param>
         /// <returns></returns>
-        public static MethodCommand[] FromType<T>(bool includePrivate = false)
+        public static MethodCommand[] FromType<T>(bool includePrivate = false, string prefix = "", string forcedCategory = null)
         {
-            return FromType(typeof(T), includePrivate);
+            return FromType(typeof(T), includePrivate, prefix, forcedCategory);
         }
 
         /// <summary>
         /// Attempts to turn all suitable static methods from the given type into commands.
         /// </summary>
         /// <param name="t"></param>
-        /// <param name="includePrivate">True to include private methods in the search; otherwise false.</param>
+        /// <param name="includePrivate">optional; True to include private methods in the search; otherwise false.</param>
+        /// <param name="prefix">optional; A prefix to add to all command names.</param>
+        /// <param name="forcedCategory">optional; The category in which to place the commands, regardless of their setting. Null means the method's attributed category is used.</param>
         /// <returns></returns>
-        public static MethodCommand[] FromType(Type t, bool includePrivate = false)
+        public static MethodCommand[] FromType(Type t, bool includePrivate = false, string prefix = "", string forcedCategory = null)
         {
             //System.Diagnostics.Debug.WriteLine("Looking up commands in {0}", t.FullName);
 
@@ -52,7 +56,7 @@ namespace vCommands.Utilities
 
             foreach (var m in methods)
             {
-                var c = FromMethod(m);
+                var c = FromMethod(m, prefix, forcedCategory);
 
                 //System.Diagnostics.Debug.WriteLine("\tChecking method {0}: {1}", m.Name, c != null);
 
@@ -67,8 +71,10 @@ namespace vCommands.Utilities
         /// Attempts to turn the given method into a command, if the method matches the signature.
         /// </summary>
         /// <param name="m"></param>
+        /// <param name="prefix">optional; A prefix to add to the command's name.</param>
+        /// <param name="forcedCategory">optional; The category in which to place the command, regardless of the method's setting. Null means the method's attributed category is used.</param>
         /// <returns>A <see cref="vCommands.Commands.MethodCommand"/> if successful; otherwise nil.</returns>
-        public static MethodCommand FromMethod(MethodInfo m)
+        public static MethodCommand FromMethod(MethodInfo m, string prefix = "", string forcedCategory = null)
         {
             if (m.ReturnType != typeof(EvaluationResult))
                 return null;
@@ -106,7 +112,7 @@ namespace vCommands.Utilities
                     abstr = lastAtt.Abstract;
             }
 
-            return new MethodCommand(name, category, abstr, (CommandMethod)Delegate.CreateDelegate(typeof(CommandMethod), m));
+            return new MethodCommand(prefix + name, forcedCategory ?? category, abstr, (CommandMethod)Delegate.CreateDelegate(typeof(CommandMethod), m));
         }
     }
 
@@ -120,29 +126,24 @@ namespace vCommands.Utilities
         /// <summary>
         /// Gets the name of the command.
         /// </summary>
-        public string Name { get; internal set; }
+        public string Name { get; set; }
 
         /// <summary>
         /// Gets the category of the command.
         /// </summary>
-        public string Category { get; internal set; }
+        public string Category { get; set; }
 
         /// <summary>
         /// Gets the description of the command.
         /// </summary>
-        public string Abstract { get; internal set; }
+        public string Abstract { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="vCommands.Utilities.MethodCommandDataAttribute"/> class with the specified command name and description.
+        /// Initializes a new instance of the <see cref="vCommands.Utilities.MethodCommandDataAttribute"/> class.
         /// </summary>
-        /// <param name="name">optional; The name to give this command. Null means the method name will be used.</param>
-        /// <param name="category">optional; The category under which the command is placed. Null means the default is used.</param>
-        /// <param name="abstr">optional; The description to give this command. Null means a palceholder description will be used.</param>
-        public MethodCommandDataAttribute(string name = null, string category = null, string abstr = null)
+        public MethodCommandDataAttribute()
         {
-            this.Name = name;
-            this.Category = category;
-            this.Abstract = abstr;
+            
         }
     }
 }

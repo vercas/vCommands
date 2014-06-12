@@ -164,9 +164,9 @@ namespace vCommands
         /// <summary>
         /// Registers a default set of commands to the host.
         /// </summary>
-        public void RegisterDefaultCommands(bool includeManual = true)
+        public void RegisterDefaultCommands(bool includeManual = true, bool includeMath = true)
         {
-            DefaultCommands.Register(this, includeManual);
+            DefaultCommands.Register(this, includeManual, includeMath);
 
             if (includeManual)
                 DefaultManuals.Register(Library, ManualDrivers);
