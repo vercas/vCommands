@@ -22,28 +22,26 @@ namespace vCommands.Parsing.Expressions
             if (context == null)
                 throw new ArgumentException("context");
 
-            int status = int.MaxValue;
-            string output = string.Empty;
+            EvaluationResult res;
 
             try
             {
-                Evaluate(out status, out output, context);
+                Evaluate(context, out res);
+
+                res.Expression = this;
+                return res;
             }
             catch (Exception x)
             {
-                status = -1;
-                output = x.ToString();
+                return new EvaluationResult(CommonStatusCodes.ClrException, this, x.ToString(), x);
             }
-
-            return new EvaluationResult(status, output, this);
         }
 
         /// <summary>
         /// Evaluates the current expression.
         /// </summary>
-        /// <param name="status">Numerical status value of the evaluation.</param>
-        /// <param name="output">Text output of the evaluation.</param>
         /// <param name="context">The context of the evaluation.</param>
-        protected abstract void Evaluate(out int status, out string output, EvaluationContext context);
+        /// <param name="res">The variable which will contain the result of the evaluation.</param>
+        protected abstract void Evaluate(EvaluationContext context, out EvaluationResult res);
     }
 }

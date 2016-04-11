@@ -39,14 +39,38 @@ namespace vCommands.Variables
         /// <summary>
         /// Changes the underlying value of the variable under the given context and according to the given value expression.
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        EvaluationResult ChangeValue(EvaluationContext context, Expression value);
+        /// <param name="context">The context under which the change occurs.</param>
+        /// <param name="value">The expression representing the value to change the variable to.</param>
+        /// <param name="ct">The means of extracting the actual value from the expression.</param>
+        /// <returns>Result of the operation.</returns>
+        EvaluationResult ChangeValue(EvaluationContext context, Expression value, ChangeType ct);
 
         /// <summary>
         /// Raised before the value of the variable is changed.
         /// </summary>
         event TypedEventHandler<IVariable, VariableChangeEventArgs> Change;
+    }
+
+    /// <summary>
+    /// Possible ways to change the value of a variable from an expression evaluation result.
+    /// </summary>
+    public enum ChangeType
+    {
+        /// <summary>
+        /// The value will be extracted exclusively from the data.
+        /// </summary>
+        FromData = 0x01,
+        /// <summary>
+        /// The value will be extracted exclusively from the output.
+        /// </summary>
+        FromOutput = 0x02,
+        /// <summary>
+        /// The value will be extracted from the data, and if that fails, from the output.
+        /// </summary>
+        FromDataOrOutput = 0x04,
+        /// <summary>
+        /// The value will be extracted from the output, and if that fails, from the data.
+        /// </summary>
+        FromOutputOrData = 0x08,
     }
 }

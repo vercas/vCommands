@@ -14,7 +14,7 @@ namespace vCommands.Commands
     /// <param name="context">The context under which the command is invoked.</param>
     /// <param name="args">The results of evaluating each argument given to the command.</param>
     /// <returns>A status code accompanied by text output.</returns>
-    public delegate EvaluationResult CommandMethod(bool? toggle, EvaluationContext context, Expression[] args);
+    public delegate EvaluationResult CommandMethod(Toggler toggle, EvaluationContext context, Expression[] args);
 
     /// <summary>
     /// Represents a command which can be executed in a console host.
@@ -51,7 +51,7 @@ namespace vCommands.Commands
         /// <param name="context">The context under which the command is invoked.</param>
         /// <param name="args">The results of evaluating each argument given to the command.</param>
         /// <returns>A status code accompanied by text output.</returns>
-        protected override EvaluationResult _Invoke(bool? toggle, EvaluationContext context, Expression[] args)
+        protected override EvaluationResult InvokeInternal(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             return Method.Invoke(toggle, context, args);
         }

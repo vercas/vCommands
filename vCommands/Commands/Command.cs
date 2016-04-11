@@ -65,7 +65,7 @@ namespace vCommands.Commands
         /// <param name="args">The results of evaluating each argument given to the command.</param>
         /// <returns>A status code accompanied by text output.</returns>
         /// <exception cref="System.ArgumentNullException">Thrown when the given argument array is null.</exception>
-        public EvaluationResult Invoke(bool? toggle, EvaluationContext context, params Expression[] args)
+        public EvaluationResult Invoke(Toggler toggle, EvaluationContext context, params Expression[] args)
         {
             if (args == null)
                 throw new ArgumentNullException("args");
@@ -75,7 +75,7 @@ namespace vCommands.Commands
             OnInvocation(e1);
 
             if (e1.Cancel)
-                return new EvaluationResult(-2, e1.CancelReason ?? "Invocation has stopped.");
+                return new EvaluationResult(CommonStatusCodes.InvocationCanceled, null, e1.CancelReason ?? "Invocation has stopped.");
 
 #if HCIE
             var e2 = new HostCommandInvocationEventArgs(this, context, toggle, args);
@@ -83,16 +83,16 @@ namespace vCommands.Commands
             context.Host.OnInvocation(e2);
 
             if (e2.Stop)
-                return new EvaluationResult(-2, e2.StopReason ?? "Invocation has stopped.");
+                return new EvaluationResult(CommonStatusCodes.InvocationCanceled, null, e2.StopReason ?? "Invocation has stopped.");
 #endif
 
             try
             {
-                return this._Invoke(toggle, context, args);
+                return this.InvokeInternal(toggle, context, args);
             }
             catch (Exception x)
             {
-                return new EvaluationResult(-1, x.ToString());
+                return new EvaluationResult(CommonStatusCodes.ClrException, null, x.ToString(), x);
             }
         }
 
@@ -122,6 +122,6 @@ namespace vCommands.Commands
         /// <param name="context"></param>
         /// <param name="args"></param>
         /// <returns></returns>
-        protected abstract EvaluationResult _Invoke(bool? toggle, EvaluationContext context, Expression[] args);
+        protected abstract EvaluationResult InvokeInternal(Toggler toggle, EvaluationContext context, Expression[] args);
     }
 }

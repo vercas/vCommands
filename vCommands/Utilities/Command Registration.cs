@@ -84,7 +84,7 @@ namespace vCommands.Utilities
             if (parameters.Length != 3)
                 return null;
 
-            if (parameters[0].ParameterType != typeof(bool?))
+            if (parameters[0].ParameterType != typeof(Toggler))
                 return null;
 
             if (parameters[1].ParameterType != typeof(EvaluationContext))

@@ -37,7 +37,7 @@
     <DocumentationFile>bin\vCommands.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>Properties\vercas_spc.pfx</AssemblyOriginatorKeyFile>
@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\Alias.cs" />
+    <Compile Include="Commands\Toggler.cs" />
     <Compile Include="Commands\User Command.cs" />
     <Compile Include="Commands\Method.cs" />
     <Compile Include="Default Manuals.cs" />
@@ -82,8 +83,10 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Utilities\Arguments and Expressions.cs" />
     <Compile Include="Utilities\Command Registration.cs" />
     <Compile Include="Default Commands.cs" />
+    <Compile Include="Common Status Codes.cs" />
     <Compile Include="Utilities\Event Handlers.cs" />
     <Compile Include="Utilities\Sealable.cs" />
     <Compile Include="Utilities\Manual Sections.cs" />

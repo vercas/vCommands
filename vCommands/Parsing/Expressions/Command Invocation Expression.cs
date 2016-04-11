@@ -6,6 +6,8 @@ using System.Text;
 
 namespace vCommands.Parsing.Expressions
 {
+    using Commands;
+
     /// <summary>
     /// Represents a command execution - a command name optionally followed by arguments.
     /// </summary>
@@ -16,7 +18,7 @@ namespace vCommands.Parsing.Expressions
         /// Gets or sets the toggle flag of the command.
         /// </summary>
         /// <exception cref="System.InvalidOperationException">Thrown when trying to set the property after the expression is sealed.</exception>
-        public Boolean? Toggle
+        public Toggler Toggle
         {
             get
             {
@@ -53,7 +55,7 @@ namespace vCommands.Parsing.Expressions
         /// </summary>
         public ReadOnlyCollection<Expression> Arguments { get; internal set; }
 
-        internal bool? _toggle = null;
+        internal Toggler _toggle = Toggler.Neutral;
         internal string _command = null;
         internal List<Expression> args;
         internal Expression[] args_a = null;
@@ -61,33 +63,20 @@ namespace vCommands.Parsing.Expressions
         /// <summary>
         /// Evaluates the current expression.
         /// </summary>
-        /// <param name="status">Numerical status value of the evaluation.</param>
-        /// <param name="output">Text output of the evaluation.</param>
         /// <param name="context">The context of the evaluation.</param>
-        protected override void Evaluate(out int status, out string output, EvaluationContext context)
+        /// <param name="res">The variable which will contain the result of the evaluation.</param>
+        protected override void Evaluate(EvaluationContext context, out EvaluationResult res)
         {
-            if (context == null)
-            {
-                status = -5;
-                output = "Missing context from which to look up command!";
-
-                return;
-            }
-
             var cmd = context.Host.GetCommand(CommandName);
 
             if (cmd == null)
             {
-                status = -6;
-                output = string.Format("Command does not exist: {0}", CommandName);
-
+                res = new EvaluationResult(CommonStatusCodes.CommandNotFound, this, string.Format("Command not found: {0}", CommandName), this.CommandName);
                 return;
             }
 
-            var res = cmd.Invoke(Toggle, context, args_a ?? args.ToArray());
-
-            status = res.Status;
-            output = res.Output;
+            res = cmd.Invoke(Toggle, context, args_a ?? args.ToArray());
+            res.Expression = this;
         }
 
         /// <summary>
@@ -96,7 +85,7 @@ namespace vCommands.Parsing.Expressions
         /// <param name="toggle">optional; A flag indicating whether the command is toggled on, off or not toggled at all.</param>
         /// <param name="commandName">optional; The name of the command to execute.</param>
         /// <param name="arguments">optional; A set of arguments to provide at the start.</param>
-        public CommandInvocationExpression(bool? toggle = null, string commandName = null, IEnumerable<Expression> arguments = null)
+        public CommandInvocationExpression(Toggler toggle = Toggler.Neutral, string commandName = null, IEnumerable<Expression> arguments = null)
         {
             if (arguments == null)
                 args = new List<Expression>();
@@ -148,9 +137,9 @@ namespace vCommands.Parsing.Expressions
         {
             var sb = new StringBuilder(4096);
 
-            if (_toggle != null)
+            if (_toggle != Toggler.Neutral)
             {
-                sb.Append(_toggle.Value ? '+' : '-');
+                sb.Append(_toggle == Toggler.On ? '+' : '-');
             }
 
             if (_command == null)

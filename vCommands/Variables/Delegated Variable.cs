@@ -129,13 +129,14 @@ namespace vCommands.Variables
         /// <summary>
         /// Changes the underlying value of the variable under the given context and according to the given value expression.
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public EvaluationResult ChangeValue(EvaluationContext context, Expression value)
+        /// <param name="context">The context under which the change occurs.</param>
+        /// <param name="value">The expression representing the value to change the variable to.</param>
+        /// <param name="ct">The means of extracting the actual value from the expression.</param>
+        /// <returns>Result of the operation.</returns>
+        public EvaluationResult ChangeValue(EvaluationContext context, Expression value, ChangeType ct)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                return new EvaluationResult(CommonStatusCodes.CvarValueNull, null, "Null expression passed as value.", this.Name);
 
             string sval = null;
 
@@ -149,7 +150,7 @@ namespace vCommands.Variables
             OnChange(e1);
 
             if (e1.Cancel)
-                return new EvaluationResult(-2, e1.CancelReason ?? "Change has stopped.");
+                return new EvaluationResult(CommonStatusCodes.InvocationCanceled, null, e1.CancelReason ?? "Change has stopped.");
 
 #if HVCE
             var e2 = new HostVariableChangeEventArgs(this, context, sval, value);
@@ -157,26 +158,53 @@ namespace vCommands.Variables
             context.Host.OnChange(e2);
 
             if (e2.Cancel)
-                return new EvaluationResult(-2, e2.CancelReason ?? "Change has stopped.");
+                return new EvaluationResult(CommonStatusCodes.InvocationCanceled, null, e2.CancelReason ?? "Change has stopped.");
 #endif
 
             var evalRes = value.Evaluate(context);
 
             if (!evalRes.TruthValue)
-                return new EvaluationResult(-1, string.Format("Evaluation of variable value expression returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                return new EvaluationResult(CommonStatusCodes.CvarValueEvaluationFailure, null, string.Format("Evaluation of variable value expression returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
 
             if (ssetter == null)
             {
                 if (vsetter == null)
-                    return new EvaluationResult(-3, "Variable cannot be written.");
+                    return new EvaluationResult(CommonStatusCodes.CvarUnchangeable, null, "Variable cannot be written.");
 
-                vsetter((T)Convert.ChangeType(evalRes.Output, typeof(T), null));
+                if (ct == ChangeType.FromData || ct == ChangeType.FromDataOrOutput)
+                {
+                    T val = default(T);
+                    var res2 = evalRes.ExtractUniqueDatum<T>(-1, this.Name, ref val);
+
+                    if (res2 == null)   //  Success!
+                    {
+                        vsetter(val);
+
+                        return new EvaluationResult(CommonStatusCodes.Success, null, val.ToString(), this, value, evalRes, val);
+                    }
+                    else if (ct == ChangeType.FromDataOrOutput)
+                    {
+                        vsetter((T)Convert.ChangeType(evalRes.Output, typeof(T), null));
+
+                        return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output, this, value, evalRes, val, res2);
+                    }
+                    else
+                        return new EvaluationResult(CommonStatusCodes.CvarValueDataLacking, null, "Unable to extract data for variable value.", this, value, evalRes);
+                }
+                else if (ct == ChangeType.FromOutput)
+                {
+                    vsetter((T)Convert.ChangeType(evalRes.Output, typeof(T), null));
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output, this, value, evalRes);
+                }
+                else
+                    return new EvaluationResult(CommonStatusCodes.CvarChangeTypeNotSupported, null, "Variable does not support falling back from output to data on change.", this, value, evalRes);
             }
             else
-                if (!ssetter(evalRes.Output))
-                    return new EvaluationResult(-4, "The given value is not of the correct type.");
-
-            return new EvaluationResult(0, evalRes.Output);
+                if (ssetter(evalRes.Output))
+                    return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output, this, value, evalRes);
+                else
+                    return new EvaluationResult(CommonStatusCodes.CvarValueFormatInvalid, null, "The given value is not of the correct type.", this, value, evalRes);
         }
 
         /// <summary>

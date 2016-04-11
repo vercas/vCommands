@@ -9,7 +9,7 @@ namespace vCommands.Parsing
     /// Possible types of tokens in a console command string.
     /// </summary>
     public enum TokenTypes
-        : sbyte
+        : int
     {
         /// <summary>
         /// Separates a sequence of commands.

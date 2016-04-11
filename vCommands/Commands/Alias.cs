@@ -50,7 +50,7 @@ namespace vCommands.Commands
         /// <param name="context">The context under which the command is invoked.</param>
         /// <param name="args">The results of evaluating each argument given to the command.</param>
         /// <returns>A status code accompanied by text output.</returns>
-        protected override EvaluationResult _Invoke(bool? toggle, EvaluationContext context, Expression[] args)
+        protected override EvaluationResult InvokeInternal(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             string[] inputs = new string[args.Length + 1];
 
@@ -61,7 +61,7 @@ namespace vCommands.Commands
                 var evalRes = args[i].Evaluate(context);
 
                 if (!evalRes.TruthValue)
-                    return new EvaluationResult(1, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
 
                 inputs[i + 1] = evalRes.Output;
             }

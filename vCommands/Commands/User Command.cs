@@ -50,7 +50,7 @@ namespace vCommands.Commands
         /// <param name="context">The context under which the command is invoked.</param>
         /// <param name="args">The results of evaluating each argument given to the command.</param>
         /// <returns>A status code accompanied by text output.</returns>
-        protected override EvaluationResult _Invoke(bool? toggle, EvaluationContext context, Expression[] args)
+        protected override EvaluationResult InvokeInternal(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             return Expression.Evaluate(context.WithUserArguments(args));
         }

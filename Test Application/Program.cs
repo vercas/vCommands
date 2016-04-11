@@ -12,7 +12,9 @@ namespace Test_Application
 {
     class Program
     {
+        const string spacez = "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         ";
         static decimal tester = 0m;
+        static bool dbg = false;
 
         static void Main(string[] args)
         {
@@ -65,19 +67,39 @@ namespace Test_Application
                 {
                     res = host.Evaluate(cmd);
 
+                    if (!res.TruthValue && !dbg)
+                        Console.Write("{0} [{1}]: ", res.Status, res.CommonStatus);
+
+
                     if (!string.IsNullOrWhiteSpace(res.Output))
                     {
-                        if (!res.TruthValue)
-                            Console.Write("{0}: ", res.Status);
-
                         Console.WriteLine(res.Output);
                     }
-                    else
-                    {
-                        if (!res.TruthValue)
-                            Console.Write("{0}: ", res.Status);
 
-                        //  Eh, byobu bash-like.
+                    if (!res.TruthValue && dbg)
+                    {
+                        ConsoleColor oBG = Console.BackgroundColor, oFG = Console.ForegroundColor;
+                        Console.BackgroundColor = ConsoleColor.White;
+                        Console.ForegroundColor = ConsoleColor.Black;
+
+                        var split = new List<string>(res.ToString().Split('\n'));
+
+                        for (int i = 0; i < split.Count; i++)
+                        {
+                            var line = split[i].Trim('\r');
+
+                            if (line.Length > Console.BufferWidth)
+                            {
+                                split.Insert(i + 1, line.Substring(Console.BufferWidth));
+                                split[i] = line.Substring(0, Console.BufferWidth);
+                            }
+                            else
+                                split[i] = line + spacez.Substring(0, Console.BufferWidth - line.Length);
+
+                            Console.Write(split[i]);
+                        }
+
+                        Console.BackgroundColor = oBG; Console.ForegroundColor = oFG;
                     }
                 }
                 catch (FormatException x)
@@ -109,6 +131,8 @@ namespace Test_Application
 
             if (string.IsNullOrWhiteSpace(cmd))
                 return Read(out cmd);
+
+            if (cmd.StartsWith("%%")) { dbg = true; cmd = cmd.Substring(2); }
 
             return cmd != "!Q";
         }

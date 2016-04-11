@@ -16,7 +16,7 @@ namespace vCommands.Manuals.Drivers
     public class OutputDriver
         : IDriver
     {
-        #region Constants and statics
+        #region Constants and Statics
 
         /// <summary>
         /// The character used to separate section indexes.
@@ -91,7 +91,7 @@ namespace vCommands.Manuals.Drivers
             foreach (var s in m.Sections)
                 displaySection(b, s, sectionIndexes);
 
-            return new EvaluationResult(0, b.ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null, b.ToString());
         }
 
         /// <summary>

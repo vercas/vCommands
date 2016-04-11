@@ -263,7 +263,7 @@ namespace vCommands.Variables
                 T temp;
 
                 if (!Setter(value, out temp))
-                    throw new FormatException(string.Format("Given data is not of the correct format. It should match a {0}."));
+                    throw new FormatException(string.Format("Given data is not of the correct format. It should match a {0}.", typeof(T).Name));
 
                 val = temp;
             }
@@ -313,20 +313,21 @@ namespace vCommands.Variables
         /// <summary>
         /// Changes the underlying value of the variable under the given context and according to the given value expression.
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public EvaluationResult ChangeValue(EvaluationContext context, Expression value)
+        /// <param name="context">The context under which the change occurs.</param>
+        /// <param name="value">The expression representing the value to change the variable to.</param>
+        /// <param name="ct">The means of extracting the actual value from the expression.</param>
+        /// <returns>Result of the operation.</returns>
+        public EvaluationResult ChangeValue(EvaluationContext context, Expression value, ChangeType ct)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                return new EvaluationResult(CommonStatusCodes.CvarValueNull, null, "Null expression passed as value.", this);
 
             var e1 = new VariableChangeEventArgs(context, this.StringValue, value);
 
             OnChange(e1);
 
             if (e1.Cancel)
-                return new EvaluationResult(-2, e1.CancelReason ?? "Change has stopped.");
+                return new EvaluationResult(CommonStatusCodes.InvocationCanceled, null, e1.CancelReason ?? "Change has stopped.", this, value, e1);
 
 #if HVCE
             var e2 = new HostVariableChangeEventArgs(this, context, this.StringValue, value);
@@ -334,17 +335,100 @@ namespace vCommands.Variables
             context.Host.OnChange(e2);
 
             if (e2.Cancel)
-                return new EvaluationResult(-2, e2.CancelReason ?? "Change has stopped.");
+                return new EvaluationResult(CommonStatusCodes.InvocationCanceled, null, e2.CancelReason ?? "Change has stopped.", this, value, e2);
 #endif
 
             var evalRes = value.Evaluate(context);
 
             if (!evalRes.TruthValue)
-                return new EvaluationResult(-1, string.Format("Evaluation of variable value expression returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                return new EvaluationResult(CommonStatusCodes.CvarValueEvaluationFailure, null, string.Format("Evaluation of variable value expression returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output), this, value, evalRes);
 
-            this.StringValue = evalRes.Output;
+            T oldTval = this.Value;
 
-            return new EvaluationResult(0, evalRes.Output);
+            if (ct == ChangeType.FromOutput)
+                try
+                {
+                    this.StringValue = evalRes.Output;
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output, this, value, evalRes, oldTval, this.Value);
+                }
+                catch (FormatException x)
+                {
+                    return new EvaluationResult(CommonStatusCodes.CvarValueFormatInvalid, null, string.Format("Value does not match the format of a {0}.", typeof(T).Name), this, evalRes, x);
+                }
+                catch (Exception x)
+                {
+                    return new EvaluationResult(CommonStatusCodes.ClrException, null, x.ToString(), this, x, evalRes);
+                }
+            else if (ct == ChangeType.FromOutputOrData)
+                try
+                {
+                    this.StringValue = evalRes.Output;
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output, this, value, evalRes, oldTval, this.Value);
+                }
+                catch (FormatException x)
+                {
+                    T newval = default(T);
+
+                    var res2 = evalRes.ExtractUniqueDatum<T>(-1, this.Name, ref newval);
+
+                    if (res2 == null)   //  Success!
+                    {
+                        this.Value = newval;
+
+                        return new EvaluationResult(CommonStatusCodes.Success, null, val.ToString(), this, value, evalRes, oldTval, newval);
+                    }
+                    else
+                        return new EvaluationResult(CommonStatusCodes.CvarValueDataLacking, null, "Unable to extract data for variable value.", this, value, evalRes, res2, x);
+                }
+                catch (Exception x)
+                {
+                    return new EvaluationResult(CommonStatusCodes.ClrException, null, x.ToString(), this, x, evalRes);
+                }
+            else if (ct == ChangeType.FromData)
+            {
+                T newval = default(T);
+
+                var res2 = evalRes.ExtractUniqueDatum<T>(-1, this.Name, ref newval);
+
+                if (res2 == null)   //  Success!
+                {
+                    this.Value = newval;
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null, val.ToString(), this, value, evalRes, oldTval, newval);
+                }
+                else
+                    return new EvaluationResult(CommonStatusCodes.CvarValueDataLacking, null, "Unable to extract data for variable value.", this, value, evalRes);
+            }
+            else
+            {
+                T newval = default(T);
+
+                var res2 = evalRes.ExtractUniqueDatum<T>(-1, this.Name, ref newval);
+
+                if (res2 == null)   //  Success!
+                {
+                    this.Value = newval;
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null, val.ToString(), this, value, evalRes, oldTval, newval);
+                }
+                else
+                    try
+                    {
+                        this.StringValue = evalRes.Output;
+
+                        return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output, this, value, evalRes, oldTval, this.Value);
+                    }
+                    catch (FormatException x)
+                    {
+                        return new EvaluationResult(CommonStatusCodes.CvarValueFormatInvalid, null, string.Format("Value does not match the format of a {0}.", typeof(T).Name), this, evalRes, x);
+                    }
+                    catch (Exception x)
+                    {
+                        return new EvaluationResult(CommonStatusCodes.ClrException, null, x.ToString(), this, x, evalRes);
+                    }
+            }
         }
 
         /// <summary>
@@ -376,7 +460,7 @@ namespace vCommands.Variables
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return Name.GetHashCode() ^ 0x5BBADB99 ^ val.GetHashCode() ^ 0x5BBADBD5;
+            return Name.GetHashCode() ^ 0x5BBADB99; //  Am I retarded? -_-                     ^ val.GetHashCode() ^ 0x5BBADBD5;
         }
 
         #endregion

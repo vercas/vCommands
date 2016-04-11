@@ -22,23 +22,26 @@ namespace vCommands.Parsing.Expressions
         /// <summary>
         /// Evaluates the expression in the series, yielding the concatenated outputs and the status of the last evaluation.
         /// </summary>
-        /// <param name="status">Numerical status value of the evaluation.</param>
-        /// <param name="output">Text output of the evaluation.</param>
         /// <param name="context">The context of the evaluation.</param>
-        protected override void Evaluate(out int status, out string output, EvaluationContext context)
+        /// <param name="res">The variable which will contain the result of the evaluation.</param>
+        protected override void Evaluate(EvaluationContext context, out EvaluationResult res)
         {
-            status = 0;
+            List<EvaluationResult> results = new List<EvaluationResult>(exprs.Count);
+            bool success = true;
             StringBuilder outputGatherer = new StringBuilder(4096);
 
             for (int i = 0; i < exprs.Count; i++)
             {
                 var evalRes = exprs[i].Evaluate(context);
+                results.Add(evalRes);
 
-                status = evalRes.Status;
+                if (i > 0) outputGatherer.AppendLine();
+
+                if (!evalRes.TruthValue) success = false;
                 outputGatherer.Append(evalRes.Output);
             }
 
-            output = outputGatherer.ToString();
+            res = new EvaluationResult(success ? CommonStatusCodes.Success : CommonStatusCodes.SeriesExpressionEvaluationFailure, this, outputGatherer.ToString(), results);
         }
 
         /// <summary>

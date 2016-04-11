@@ -91,36 +91,30 @@ namespace vCommands.Parsing.Expressions
         /// <summary>
         /// Evaluates the condition, and if it meets the required truth value, evaluates the primary action, otherwise the secondary action, if any.
         /// </summary>
-        /// <param name="status">Numerical status value of the evaluation.</param>
-        /// <param name="output">Text output of the evaluation.</param>
         /// <param name="context">The context of the evaluation.</param>
-        protected override void Evaluate(out int status, out string output, EvaluationContext context)
+        /// <param name="res">The variable which will contain the result of the evaluation.</param>
+        protected override void Evaluate(EvaluationContext context, out EvaluationResult res)
         {
             if (Condition == null)
             {
-                status = -2;
-                output = "Missing condition expression!";
-
+                res = new EvaluationResult(CommonStatusCodes.ConditionalExpressionConditionMissing, this, "Missing condition expression!", this.Condition, this.TruthValue, this.PrimaryAction, this.SecondaryAction);
                 return;
             }
 
             if (PrimaryAction == null)
             {
-                status = -3;
-                output = "Missing primary action expression!";
-
+                res = new EvaluationResult(CommonStatusCodes.ConditionalExpressionPrimaryActionMissing, this, "Missing primary action expression!", this.Condition, this.TruthValue, this.PrimaryAction, this.SecondaryAction);
                 return;
             }
 
-            var evalRes = Condition.Evaluate(context);
+            res = Condition.Evaluate(context);
 
-            if (evalRes.TruthValue == this.TruthValue)
-                evalRes = _primary.Evaluate(context);
+            if (res.TruthValue == this.TruthValue)
+                res = _primary.Evaluate(context);
             else if (_secondary != null)
-                evalRes = _secondary.Evaluate(context);
+                res = _secondary.Evaluate(context);
 
-            status = evalRes.Status;
-            output = evalRes.Output;
+            res.Expression = this;
         }
 
         /// <summary>

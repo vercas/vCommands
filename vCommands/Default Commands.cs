@@ -64,20 +64,24 @@ namespace vCommands
 
                 CommandMethod deleg = (toggle, context, args) =>
                 {
+                    if (toggle != Toggler.Neutral)
+                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null, string.Format("'{0}' does not support toggler '{1}'.", mthdName, toggle == Toggler.On ? "+" : "-"));
                     if (args.Length != 1)
-                        return new EvaluationResult(1, string.Format("'{0}' must receive one argument: a number.", mthdName));
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, string.Format("'{0}' must receive one argument: a number.", mthdName), args);
 
                     var evalRes = args[0].Evaluate(context);
 
-                    if (!evalRes.TruthValue)
-                        return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                    var evalRes2 = evalRes.CheckTruthValue(0, mthdName, true);
+                    if (evalRes2 != null) return evalRes2;
 
-                    double d;
+                    double d = 0d;
 
-                    if (!double.TryParse(evalRes.Output, out d))
-                        return new EvaluationResult(3, "The given argument is not a number.");
+                    evalRes2 = evalRes.ExtractUniqueDatum<double>(0, mthdName, ref d);
+                    if (evalRes2 != null) return evalRes2;
 
-                    return new EvaluationResult(0, mthd(d).ToString());
+                    var d2 = mthd(d);
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null, d2.ToString(), d2, new double[1] { d });
                 };
 
                 var cmd = new MethodCommand(mthdName, "Mathematics", kv.Item2, deleg);
@@ -102,27 +106,29 @@ namespace vCommands
 
                 CommandMethod deleg = (toggle, context, args) =>
                 {
+                    if (toggle != Toggler.Neutral)
+                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null, string.Format("'{0}' does not support toggler '{1}'.", mthdName, toggle == Toggler.On ? "+" : "-"));
                     if (args.Length != 2)
-                        return new EvaluationResult(1, string.Format("'{0}' must receive two arguments, both numbers.", mthdName));
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, string.Format("'{0}' must receive two arguments, both numbers.", mthdName), args);
 
+                    double d = 0d;
                     var numbers = new double[2];
 
                     for (int i = 0; i < 2; i++)
                     {
                         var evalRes = args[i].Evaluate(context);
 
-                        if (!evalRes.TruthValue)
-                            return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
-
-                        double d;
-
-                        if (!double.TryParse(evalRes.Output, out d))
-                            return new EvaluationResult(3, string.Format("Argument #{0} is not a number.", i + 1));
+                        var evalRes2 = evalRes.CheckTruthValue(i, mthdName, true);
+                        if (evalRes2 != null) return evalRes2;
+                        evalRes2 = evalRes.ExtractUniqueDatum<double>(i, mthdName, ref d);
+                        if (evalRes2 != null) return evalRes2;
 
                         numbers[i] = d;
                     }
 
-                    return new EvaluationResult(0, mthd(numbers[0], numbers[1]).ToString());
+                    d = mthd(numbers[0], numbers[1]);
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null, d.ToString(), d, numbers);
                 };
 
                 var cmd = new MethodCommand(mthdName, "Mathematics", kv.Item2, deleg);
@@ -132,57 +138,71 @@ namespace vCommands
 
             //  Binary logic commands, which require two arguments/operands.
 
-            var binaryLogicMathematics = new Tuple<BinaryMathematicalLogicFunction<double>, char, char, string>[]
+            var binaryLogicMathematics = new Tuple<BinaryMathematicalLogicFunction<double>, bool, char, char, string>[]
             {
-                new Tuple<BinaryMathematicalLogicFunction<double>, char, char, string>(lt, '<', '≮', "Determines whether the first number is less than the second."),
-                new Tuple<BinaryMathematicalLogicFunction<double>, char, char, string>(lteq, '≤', '≰', "Determines whether the first number is less than or equal to the second."),
-                new Tuple<BinaryMathematicalLogicFunction<double>, char, char, string>(gt, '>', '≯', "Determines whether the first number is greater than the second."),
-                new Tuple<BinaryMathematicalLogicFunction<double>, char, char, string>(gteq, '≥', '≱', "Determines whether the first number is greater than or equal the second."),
+                new Tuple<BinaryMathematicalLogicFunction<double>, bool, char, char, string>(lt, true, '<', '≮', "Determines whether the first number is less than the second."),
+                new Tuple<BinaryMathematicalLogicFunction<double>, bool, char, char, string>(lteq, true, '≤', '≰', "Determines whether the first number is less than or equal to the second."),
+                new Tuple<BinaryMathematicalLogicFunction<double>, bool, char, char, string>(gt, true, '>', '≯', "Determines whether the first number is greater than the second."),
+                new Tuple<BinaryMathematicalLogicFunction<double>, bool, char, char, string>(gteq, true, '≥', '≱', "Determines whether the first number is greater than or equal the second."),
             };
 
             foreach (var kv in binaryLogicMathematics)
             {
                 var mthd = kv.Item1;
-                char sym1 = kv.Item2, sym2 = kv.Item3;
+                var retStat = kv.Item2;
+                char sym1 = kv.Item3, sym2 = kv.Item4;
                 var mthdName = kv.Item1.Method.Name.ToLower();
 
                 CommandMethod deleg = (toggle, context, args) =>
                 {
-                    if (args.Length != 2)
-                        return new EvaluationResult(1, string.Format("'{0}' must receive two arguments, both numbers.", mthdName));
+                    var willDoStatus = false;
 
+                    if (retStat)
+                    {
+                        if (toggle == Toggler.On)
+                            return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null, string.Format("'{0}' does not support toggler '+'.", mthdName));
+                        else
+                            willDoStatus = toggle != Toggler.Neutral; //  -command = will return status;
+                    }
+                    else if (toggle != Toggler.Neutral)
+                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null, string.Format("'{0}' does not support toggler '{1}'.", mthdName, toggle == Toggler.On ? "+" : "-"));
+
+                    if (args.Length != 2)
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, string.Format("'{0}' must receive two arguments, both numbers.", mthdName));
+
+                    double d = 0d;
                     var numbers = new double[2];
 
                     for (int i = 0; i < 2; i++)
                     {
                         var evalRes = args[i].Evaluate(context);
 
-                        if (!evalRes.TruthValue)
-                            return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
-
-                        double d;
-
-                        if (!double.TryParse(evalRes.Output, out d))
-                            return new EvaluationResult(3, string.Format("Argument #{0} is not a number.", i + 1));
+                        var evalRes2 = evalRes.CheckTruthValue(i, mthdName, true);
+                        if (evalRes2 != null) return evalRes2;
+                        evalRes2 = evalRes.ExtractUniqueDatum<double>(i, mthdName, ref d);
+                        if (evalRes2 != null) return evalRes2;
 
                         numbers[i] = d;
                     }
 
                     var res = mthd(numbers[0], numbers[1]);
 
-                    if (res)
-                        return new EvaluationResult(0, string.Format("{0} {1} {2}", numbers[0], sym1, numbers[1]));
+                    if (willDoStatus)
+                        if (res)
+                            return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("{0} {1} {2}", numbers[0], sym1, numbers[1]), numbers);
+                        else
+                            return new EvaluationResult(CommonStatusCodes.MathematicalLogicFailure, null, string.Format("{0} {1} {2}", numbers[0], sym2, numbers[1]), numbers);
                     else
-                        return new EvaluationResult(4, string.Format("{0} {1} {2}", numbers[0], sym2, numbers[1]));
+                        return new EvaluationResult(CommonStatusCodes.Success, null, res.ToString(), res, numbers);
                 };
 
-                var cmd = new MethodCommand(mthdName, "Comparison", kv.Item4, deleg);
+                var cmd = new MethodCommand(mthdName, "Comparison", kv.Item5, deleg);
 
                 all.Add(cmd);
             }
 
             //  N-ary commands, they take at least 2 arguments.
-            
+
             var naryMathematics = new Tuple<NaryMathematicalFunction<double>, string>[]
             {
                 new Tuple<NaryMathematicalFunction<double>, string>(min, "Computes the minimum value of the given numbers."),
@@ -200,27 +220,29 @@ namespace vCommands
 
                 CommandMethod deleg = (toggle, context, args) =>
                 {
+                    if (toggle != Toggler.Neutral)
+                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null, string.Format("'{0}' does not support toggler '{1}'.", mthdName, toggle == Toggler.On ? "+" : "-"));
                     if (args.Length < 2)
-                        return new EvaluationResult(1, string.Format("'{0}' must receive at least two arguments, all numbers.", mthdName));
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, string.Format("'{0}' must receive at least two arguments, all numbers.", mthdName));
 
+                    double d = 0d;
                     var numbers = new double[args.Length];
 
                     for (int i = 0; i < args.Length; i++)
                     {
                         var evalRes = args[i].Evaluate(context);
 
-                        if (!evalRes.TruthValue)
-                            return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
-
-                        double d;
-
-                        if (!double.TryParse(evalRes.Output, out d))
-                            return new EvaluationResult(3, string.Format("Argument #{0} is not a number.", i + 1));
+                        var evalRes2 = evalRes.CheckTruthValue(i, mthdName, true);
+                        if (evalRes2 != null) return evalRes2;
+                        evalRes2 = evalRes.ExtractUniqueDatum<double>(i, mthdName, ref d);
+                        if (evalRes2 != null) return evalRes2;
 
                         numbers[i] = d;
                     }
 
-                    return new EvaluationResult(0, mthd(numbers).ToString());
+                    d = mthd(numbers);
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null, d.ToString(), d, numbers);
                 };
 
                 var cmd = new MethodCommand(mthdName, "Mathematics", kv.Item2, deleg);
@@ -261,8 +283,8 @@ namespace vCommands
 
         //  And now, the commands.
 
-        [MethodCommandData(Abstract = "Displays every available command and its description.")]
-        static EvaluationResult help(bool? toggle, EvaluationContext context, Expression[] args)
+        [MethodCommandData(Abstract = "Displays every available command and variable and their descriptions.")]
+        static EvaluationResult help(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             IEnumerable<KeyValuePair<string, Command>> cmds = context.Host.cmds;
             IEnumerable<KeyValuePair<string, IVariable>> vars = context.Host.vars;
@@ -273,7 +295,7 @@ namespace vCommands
             {
                 //  For now, quit.
 
-                return new EvaluationResult(1, "Must not provide more than one argument to 'help', and that argument may be a regular expression.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Must not provide more than one argument to 'help', and that argument may be a regular expression.");
             }
             else
             {
@@ -281,35 +303,38 @@ namespace vCommands
                 {
                     var evalRes = args[0].Evaluate(context);
 
-                    if (!evalRes.TruthValue)
-                        return new EvaluationResult(2, string.Format("Argument evaluation resulted in non-zer: {0} ({1})", evalRes.Status, evalRes.Output));
+                    var evalRes2 = evalRes.CheckTruthValue(0, "help", true);
+                    if (evalRes2 != null) return evalRes2;
 
                     var regex = new Regex(evalRes.Output);
 
-                    if (toggle == null)
+                    if (toggle == Toggler.Neutral)
                     {
                         cmds = cmds.Where(kv => regex.IsMatch(kv.Key));
+                        vars = vars.Where(kv => regex.IsMatch(kv.Key));
 
-                        ob.Append("Looking for regular expression in command names: ");
+                        ob.Append("Looking for regular expression in command/variable names: ");
                     }
-                    else if (toggle.Value)
+                    else if (toggle == Toggler.On)
                     {
                         cmds = cmds.Where(kv => regex.IsMatch(kv.Key) || regex.IsMatch(kv.Value.Abstract));
+                        vars = vars.Where(kv => regex.IsMatch(kv.Key) || regex.IsMatch(kv.Value.Abstract));
 
-                        ob.Append("Looking for regular expression in command names and descriptions: ");
+                        ob.Append("Looking for regular expression in command/variable names and descriptions: ");
                     }
                     else
                     {
                         cmds = cmds.Where(kv => regex.IsMatch(kv.Value.Abstract));
+                        vars = vars.Where(kv => regex.IsMatch(kv.Value.Abstract));
 
-                        ob.Append("Looking for regular expression in command descriptions: ");
+                        ob.Append("Looking for regular expression in command/variable descriptions: ");
                     }
 
                     ob.AppendLine(evalRes.Output);
                 }
                 else
                 {
-                    ob.AppendLine("Listing all commands with descriptions:");
+                    ob.AppendLine("Listing all commands and variables with descriptions:");
                 }
 
                 //ob.AppendLine();
@@ -349,109 +374,109 @@ namespace vCommands
             ob.AppendLine();
             ob.AppendFormat("Powered by {0}.", AssemblyName);
 
-            return new EvaluationResult(0, ob.ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null, ob.ToString());
         }
 
         [MethodCommandData(Abstract = "Returns the given input arguments, separated by a tabulator.")]
-        static EvaluationResult echo(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult echo(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             string output;
 
-            if (toggle == null)
+            if (toggle == Toggler.Neutral)
                 output = string.Join("\t", from a in args select a.Evaluate(context).Output);
-            else if (toggle.Value)
+            else if (toggle == Toggler.On)
                 output = string.Join(Environment.NewLine, from a in args select a.Evaluate(context).Output);
             else
                 output = string.Concat(from a in args select a.Evaluate(context).Output);
 
-            return new EvaluationResult(0, output);
+            return new EvaluationResult(CommonStatusCodes.Success, null, output);
         }
 
-        [MethodCommandData(Abstract = "Evaluates the given arguments to the last or until one returns non-zero status.")]
-        static EvaluationResult eval(bool? toggle, EvaluationContext context, Expression[] args)
+        [MethodCommandData(Abstract = "Evaluates the given arguments sequentially until one returns non-zero status.")]
+        static EvaluationResult eval(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             StringBuilder ob = new StringBuilder(4096);
-            int status = 0;
+            EvaluationResult[] reses = new EvaluationResult[args.Length];
+            int i = 0;
 
-            for (int i = 0; i < args.Length; i++)
+            for (; i < args.Length; i++)
             {
                 var res = args[i].Evaluate(context);
+                reses[i] = res;
 
                 if (i > 0)
                     ob.Append('\t');
 
                 ob.Append(res.Output);
 
-                status = res.Status;
-
-                if (status != 0)
+                if (res.Status != 0)
                     break;
             }
 
-            return new EvaluationResult(status, ob.ToString());
+            return new EvaluationResult(CommonStatusCodes.SequentialEvaluationFailure, null, ob.ToString(), reses, i);
         }
 
         [MethodCommandData(Abstract = "Repeats a command for a number of times.")]
-        static EvaluationResult repeat(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult repeat(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 2)
-                return new EvaluationResult(1, "'repeat' must receive two arguments: a count and an expression.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'repeat' must receive two arguments: a count and an expression.", args);
 
             var evalRes = args[0].Evaluate(context);
+            int i = -1;
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
-
-            int i;
-
-            if (!int.TryParse(evalRes.Output, out i))
-                return new EvaluationResult(4, "The given argument is not an integer.");
+            var evalRes2 = evalRes.CheckTruthValue(0, "repeat", true);
+            if (evalRes2 != null) return evalRes2;
+            evalRes2 = evalRes.ExtractUniqueDatum<int>(0, "for", ref i);
+            if (evalRes2 != null) return evalRes2;
             if (i < 1)  //  We will use 1-based indexes here.
-                return new EvaluationResult(5, "The given argument must be greater than 0 (zero).");
+                return new EvaluationResult(CommonStatusCodes.LoopNegativeBound, null, "Evaluation of argument #1 to 'repeat' returned non-positive number.", i, evalRes);
+
+            var exp = args[1];
 
             switch (toggle)
             {
-                case null:
+                case Toggler.Neutral:
                     var ous1 = new string[i];
 
                     for (int j = 0; j < i; j++)
                     {
-                        evalRes = args[1].Evaluate(context);
+                        evalRes = exp.Evaluate(context);
 
                         if (!evalRes.TruthValue)
-                            return new EvaluationResult(6, string.Format("Evaluation #{0} of the given expression (argument #2) failed with non-zero status: {0} {1}", j + 1, evalRes.Status, evalRes.Output));
+                            return new EvaluationResult(CommonStatusCodes.LoopExpressionFailure, null, string.Format("Evaluation #{0} of the 'repeat' loop expression (argument #2) failed with non-zero status: {1} ({2}); {3}", j + 1, evalRes.Status, evalRes.CommonStatus, evalRes.Output), exp, evalRes, j, ous1, 1);
 
                         ous1[j] = evalRes.Output;
                     }
 
-                    return new EvaluationResult(0, string.Concat(ous1));
+                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Concat(ous1), exp, ous1, i);
 
-                case true:
+                case Toggler.On:
                     var ous2 = new string[i];
 
                     for (int j = 0; j < i; j++)
-                        ous2[j] = args[1].Evaluate(context).Output;
+                        ous2[j] = exp.Evaluate(context).Output;
 
-                    return new EvaluationResult(0, string.Concat(ous2));
+                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Concat(ous2), exp, ous2, i);
 
-                default:
+                default:    //  false
                     for (int j = 0; j < i; j++)
-                        args[1].Evaluate(context);
+                        exp.Evaluate(context);
 
-                    return new EvaluationResult(0, string.Format("Given expression has been indiscriminately evaluated {0} times.", i));
+                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("Given expression has been indiscriminately evaluated {0} times.", i), exp, i);
             }
         }
 
         [MethodCommandData(Name = "for", Abstract = "Repeats a command for a number of times.")]
-        static EvaluationResult for_loop(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult for_loop(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 4 && args.Length != 5)
-                return new EvaluationResult(1, "'for' must receive 4 or 5 arguments: iterator name, initial value, end value, an expression and an optional increment amount that defaults to 1 or -1 depending on direction.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'for' must receive 4 or 5 arguments: iterator name, initial value, end value, an expression and an optional increment amount that defaults to 1 or -1 depending on direction.", args);
 
             var evalRes = args[0].Evaluate(context);
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+            var evalRes2 = evalRes.CheckTruthValue(0, "for", true);
+            if (evalRes2 != null) return evalRes2;
 
             var iteratorName = evalRes.Output;
 
@@ -460,16 +485,14 @@ namespace vCommands
             for (int j = 0; j < 2; j++)
             {
                 evalRes = args[1 + j].Evaluate(context);
+                int numba = -1;
 
-                if (!evalRes.TruthValue)
-                    return new EvaluationResult(3, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", 1 + j + 1, evalRes.Status, evalRes.Output));
-
-                int numba;
-
-                if (!int.TryParse(evalRes.Output, out numba))
-                    return new EvaluationResult(4, "The given argument is not an integer.");
+                evalRes2 = evalRes.CheckTruthValue(1 + j, "for", true);
+                if (evalRes2 != null) return evalRes2;
+                evalRes2 = evalRes.ExtractUniqueDatum<int>(1 + j, "for", ref numba);
+                if (evalRes2 != null) return evalRes2;
                 if (numba < 1)  //  We will use 1-based indexes here.
-                    return new EvaluationResult(5, "The given argument must be greater than 0 (zero).");
+                    return new EvaluationResult(CommonStatusCodes.LoopNegativeBound, null, string.Format("Evaluation of argument #{0} to 'repeat' returned non-positive number.", j + 2), j + 1, numba, evalRes, bounds);
 
                 bounds[j] = numba;
             }
@@ -480,150 +503,152 @@ namespace vCommands
             if (args.Length == 5)
             {
                 evalRes = args[4].Evaluate(context);
+                int numba = -1;
 
-                if (!evalRes.TruthValue)
-                    return new EvaluationResult(6, string.Format("Evaluation of argument #5 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
-
-                int numba;
-
-                if (!int.TryParse(evalRes.Output, out numba))
-                    return new EvaluationResult(7, "The given argument is not an integer.");
-                if (numba < 1)  //  We will use 1-based indexes here.
-                    return new EvaluationResult(8, "The given argument must be greater than 0 (zero).");
+                evalRes2 = evalRes.CheckTruthValue(4, "for", true);
+                if (evalRes2 != null) return evalRes2;
+                evalRes2 = evalRes.ExtractUniqueDatum<int>(4, "for", ref numba);
+                if (evalRes2 != null) return evalRes2;
+                if (numba == 0 || (backwards && numba > 0) || (!backwards && numba < 0))
+                    return new EvaluationResult(CommonStatusCodes.LoopIncrementorInvalid, null, 
+                        backwards
+                            ? "Incrementor of 'for' loop must be strictly negative when initial value is greater than end value."
+                            : "Incrementor of 'for' loop must be strictly positive when initial value is lower than or equal to end value.", 
+                        numba, backwards, evalRes);
 
                 incrementor = numba;
             }
 
-            int i = bounds[1] - bounds[0];
+            var exp = args[3];
+            int i = 0;
 
             switch (toggle)
             {
-                case null:
+                case Toggler.Neutral:
                     var ous1 = new List<string>((int)Math.Ceiling(Math.Abs((double)(bounds[1] - bounds[0]) / incrementor)));
+
+                    System.Diagnostics.Debug.WriteLine("Expected {0} for loop iterations; Start = {1}; End = {2}; Incrementor = {3}", ous1.Count, bounds[0], bounds[1], incrementor);
 
                     for (int j = bounds[0]; backwards ? (j >= bounds[1]) : (j <= bounds[1]); j += incrementor)
                     {
-                        evalRes = args[3].Evaluate(context.WithLocal(iteratorName, j.ToString()));
+                        evalRes = exp.Evaluate(context.WithLocal(iteratorName, ConstantExpression.Fetch(j.ToString()).Evaluate(context)));
 
                         if (!evalRes.TruthValue)
-                            return new EvaluationResult(9, string.Format("Evaluation #{0} of the given expression (argument #2) failed with non-zero status: {0} {1}", j + 1, evalRes.Status, evalRes.Output));
-
+                            return new EvaluationResult(CommonStatusCodes.LoopExpressionFailure, null, string.Format("Evaluation #{0} of the 'repeat' loop expression (argument #4) failed with non-zero status: {1} ({2}); {3}", i + 1, evalRes.Status, evalRes.CommonStatus, evalRes.Output), exp, evalRes, j, ous1, 1);
+                        
                         ous1.Add(evalRes.Output);
+                        i++;
+
+                        System.Diagnostics.Debug.WriteLine("\tJ = {0}", j);
                     }
 
-                    return new EvaluationResult(0, string.Concat(ous1));
+                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Concat(ous1), exp, i, ous1);
 
-                case true:
+                case Toggler.On:
                     var ous2 = new List<string>((int)Math.Ceiling(Math.Abs((double)(bounds[1] - bounds[0]) / incrementor)));
 
                     for (int j = bounds[0]; backwards ? (j >= bounds[1]) : (j <= bounds[1]); j += incrementor)
-                        ous2.Add(args[3].Evaluate(context.WithLocal(iteratorName, j.ToString())).Output);
+                    {
+                        ous2.Add(exp.Evaluate(context.WithLocal(iteratorName, ConstantExpression.Fetch(j.ToString()).Evaluate(context))).Output);
+                        i++;
+                    }
 
-                    return new EvaluationResult(0, string.Concat(ous2));
+                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Concat(ous2), exp, i, ous2);
 
                 default:
                     for (int j = bounds[0]; backwards ? (j >= bounds[1]) : (j <= bounds[1]); j += incrementor)
-                        args[3].Evaluate(context.WithLocal(iteratorName, j.ToString()));
+                    {
+                        exp.Evaluate(context.WithLocal(iteratorName, ConstantExpression.Fetch(j.ToString()).Evaluate(context)));
+                        i++;
+                    }
 
-                    return new EvaluationResult(0, string.Format("Given expression has been indiscriminately evaluated {0} times.", i));
+                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("Given expression has been indiscriminately evaluated {0} times.", i), exp, i);
             }
         }
 
         [MethodCommandData(Abstract = "Retrieves a local value from the evaluation context.")]
-        static EvaluationResult local(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult local(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             switch (toggle)
             {
-                case null:
+                case Toggler.Neutral:
                     if (args.Length != 1)
-                        return new EvaluationResult(1, "'local' must receive one argument: a name.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'local' must receive one argument: a name.", args);
                     break;
 
-                case false:
+                case Toggler.Off:
                     if (args.Length != 1)
-                        return new EvaluationResult(1, "'-local' must receive one argument: a name.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'-local' must receive one argument: a name.", args);
                     break;
 
                 default:
                     if (args.Length != 2)
-                        return new EvaluationResult(1, "'+local' must receive two arguments: a name and a value.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'+local' must receive two arguments: a name and a value.", args);
                     break;
             }
 
             var evalRes = args[0].Evaluate(context);
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
-            
+            var evalRes2 = evalRes.CheckTruthValue(0, "local", true);
+            if (evalRes2 != null) return evalRes2;
+
             switch (toggle)
             {
-                case null:
-                    if (context.Locals.Count == 0)
-                        return new EvaluationResult(3, "There are no local variables in the execution context.");
-
-                    string res = null;
+                case Toggler.Neutral:
+                    EvaluationResult res = null;
 
                     if (context.Locals.TryGetValue(evalRes.Output, out res))
-                        return new EvaluationResult(0, res);
+                        return res;
                     else
-                        return new EvaluationResult(4, "There is no local variable with the specified name.");
+                        return new EvaluationResult(CommonStatusCodes.LocalVariableNotFound, null, string.Format("No local variable named '{0}' exists in the context.", evalRes.Output), evalRes);
 
-                case false:
-                    if (context.Locals.Count == 0)
-                        return new EvaluationResult(3, "There are no local variables in the execution context.");
-
-                    if (context.Locals.ContainsKey(evalRes.Output))
-                    {
-                        context.Locals.Remove(evalRes.Output);
-
-                        return new EvaluationResult(0, "Local removed.");
-                    }
+                case Toggler.Off:
+                    if (context.Locals.Remove(evalRes.Output))
+                        return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("Local variable '{0}' is removed.", evalRes.Output)); //  Operation is most likely going to be part of something more complex, but that is fixable.
                     else
-                        return new EvaluationResult(4, "There is no local variable with the specified name.");
+                        return new EvaluationResult(CommonStatusCodes.LocalVariableNotFound, null, string.Format("No local variable named '{0}' exists in the context.", evalRes.Output), evalRes);
 
                 default:
                     var name = evalRes.Output;
 
                     evalRes = args[1].Evaluate(context);
 
-                    if (!evalRes.TruthValue)
-                        return new EvaluationResult(5, string.Format("Evaluation of argument #2 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                    evalRes2 = evalRes.CheckTruthValue(1, "local", true);
+                    if (evalRes2 != null) return evalRes2;
 
-                    context.Locals[name] = evalRes.Output;
+                    context.Locals[name] = evalRes;
 
-                    return new EvaluationResult(0, string.Format("{0} = {1}", name, evalRes.Output));
+                    return evalRes; //  Has all we need.
             }
         }
 
         [MethodCommandData(Abstract = "Evaluates an expression with some local values.")]
-        static EvaluationResult with(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult with(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length < 3 || args.Length % 2 != 1)
-                return new EvaluationResult(1, "'with' must receive at least one local definition(a name followed by a value) and an expression.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'with' must receive at least one local definition(a name followed by a value) and an expression.");
 
-            List<KeyValuePair<string, string>> locals = new List<KeyValuePair<string, string>>(args.Length / 2);
+            List<KeyValuePair<string, EvaluationResult>> locals = new List<KeyValuePair<string, EvaluationResult>>(args.Length / 2);
 
             EvaluationResult evalRes;
 
             for (int i = 0; i < args.Length - 1; i += 2)
             {
-                string name = null, value = null;
+                string name = null;
 
                 evalRes = args[i].Evaluate(context);
 
-                if (!evalRes.TruthValue)
-                    return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                var evalRes2 = evalRes.CheckTruthValue(i, "with", true);
+                if (evalRes2 != null) return evalRes2;
 
                 name = evalRes.Output;
 
                 evalRes = args[i + 1].Evaluate(context);
 
-                if (!evalRes.TruthValue)
-                    return new EvaluationResult(3, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 2, evalRes.Status, evalRes.Output));
+                evalRes2 = evalRes.CheckTruthValue(i + 1, "with", true);
+                if (evalRes2 != null) return evalRes2;
 
-                value = evalRes.Output;
-
-                locals.Add(new KeyValuePair<string, string>(name, value));
+                locals.Add(new KeyValuePair<string, EvaluationResult>(name, evalRes));
             }
 
             return args[args.Length - 1].Evaluate(context.WithLocal(locals));
@@ -632,146 +657,144 @@ namespace vCommands
         #region User-defined commands and aliases
 
         [MethodCommandData(Abstract = "Creates a named alias for an expression.")]
-        static EvaluationResult alias(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult alias(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             switch (toggle)
             {
-                case null:
+                case Toggler.Neutral:
                     if (args.Length != 2)
-                        return new EvaluationResult(1, "'alias' must receive two arguments: a name and an expression.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'alias' must receive two arguments: a name and an expression.");
                     break;
 
-                case true:
+                case Toggler.On:
                     if (args.Length != 2)
-                        return new EvaluationResult(1, "'+alias' must receive two arguments: a name and an expression.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'+alias' must receive two arguments: a name and an expression.");
                     break;
 
                 default:
                     if (args.Length != 1)
-                        return new EvaluationResult(1, "'-alias' must receive one argument: a name.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'-alias' must receive one argument: a name.");
                     break;
             }
 
             var evalRes = args[0].Evaluate(context);
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+            var evalRes2 = evalRes.CheckTruthValue(0, "alias", true);
+            if (evalRes2 != null) return evalRes2;
 
             switch (toggle)
             {
-                case null:
+                case Toggler.Neutral:
                     var als1 = new Alias(evalRes.Output, args[1].ToString());
 
                     if (context.Host.RegisterCommand(als1, false, false))
-                        return EvaluationResult.EmptyPositive;
+                        return EvaluationResult.NewEmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
 
-                case true:
+                case Toggler.On:
                     var als2 = new Alias(evalRes.Output, args[1].ToString());
 
                     if (context.Host.RegisterCommand(als2, true, true))
-                        return EvaluationResult.EmptyPositive;
+                        return EvaluationResult.NewEmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given name, and it is not an alias: {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given name, and it is not an alias: {0}", evalRes.Output));
 
                 default:
                     if (context.Host.RemoveCommand(evalRes.Output))
-                        return EvaluationResult.EmptyPositive;
+                        return EvaluationResult.NewEmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
             }
         }
 
         [MethodCommandData(Abstract = "Creates a named command which can accept arguments.")]
-        static EvaluationResult define(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult define(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             switch (toggle)
             {
-                case null:
+                case Toggler.Neutral:
                     if (args.Length != 2)
-                        return new EvaluationResult(1, "'define' must receive two arguments: a name and an expression.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'define' must receive two arguments: a name and an expression.");
                     break;
 
-                case true:
+                case Toggler.On:
                     if (args.Length != 2)
-                        return new EvaluationResult(1, "'+define' must receive two arguments: a name and an expression.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'+define' must receive two arguments: a name and an expression.");
                     break;
 
                 default:
                     if (args.Length != 1)
-                        return new EvaluationResult(1, "'-define' must receive one argument: a name.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'-define' must receive one argument: a name.");
                     break;
             }
 
             var evalRes = args[0].Evaluate(context);
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
-
+            var evalRes2 = evalRes.CheckTruthValue(0, "define", true);
+            if (evalRes2 != null) return evalRes2;
+            
             switch (toggle)
             {
-                case null:
+                case Toggler.Neutral:
                     var als1 = new UserCommand(evalRes.Output, args[1]);
 
                     if (context.Host.RegisterCommand(als1, false, false))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
 
-                case true:
+                case Toggler.On:
                     var als2 = new UserCommand(evalRes.Output, args[1]);
 
                     if (context.Host.RegisterCommand(als2, true, true))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
 
                 default:
                     if (context.Host.RemoveCommand(evalRes.Output))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(3, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
             }
 
         }
 
         [MethodCommandData(Abstract = "Retrieves a user argument from the evaluation context for a user-defined function.")]
-        static EvaluationResult arg(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult arg(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 1)
-                return new EvaluationResult(1, "'arg' must receive one argument: an index.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'arg' must receive one argument: an index.");
+            if (context.UserArguments == null)
+                return new EvaluationResult(CommonStatusCodes.UserArgumentsMissing, null, "Execution context lacks user arguments.");
 
             var evalRes = args[0].Evaluate(context);
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+            var evalRes2 = evalRes.CheckTruthValue(0, "arg", true);
+            if (evalRes2 != null) return evalRes2;
 
-            if (context.UserArguments == null || context.UserArguments.Count == 0)
-                return new EvaluationResult(3, "There are no user arguments in the execution context.");
+            int i = -1;
 
-            int i;
-
-            if (!int.TryParse(evalRes.Output, out i))
-                return new EvaluationResult(4, "The given argument is not an integer.");
+            evalRes2 = evalRes.ExtractUniqueDatum<int>(0, "arg", ref i);
+            if (evalRes2 != null) return evalRes2;
             if (i < 1)  //  We will use 1-based indexes here.
-                return new EvaluationResult(5, "The given argument must be greater than 0 (zero).");
+                return new EvaluationResult(CommonStatusCodes.UserArgumentIndexInvalid, null, string.Format("Argument index ({0}) must be strictly positive.", i), evalRes, i);
             if (i > context.UserArguments.Count)
-                return new EvaluationResult(6, "There is no user argument at index #" + i);
+                return new EvaluationResult(CommonStatusCodes.UserArgumentNotFound, null, "There is no user argument at index #" + i, evalRes, i);
 
             return context.UserArguments[i - 1].Evaluate(context);
         }
 
         [MethodCommandData(Abstract = "Retrieves the number of user arguments from the execution context for a user-defined function.")]
-        static EvaluationResult argc(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult argc(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 0)
-                return new EvaluationResult(1, "'argc' must receive no arguments.");
-
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'argc' must receive no arguments.");
             if (context.UserArguments == null)
-                return new EvaluationResult(2, "There are no user arguments in the execution context.");
+                return new EvaluationResult(CommonStatusCodes.UserArgumentsMissing, null, "There are no user arguments in the execution context.");
 
-            return new EvaluationResult(0, context.UserArguments.Count.ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null, context.UserArguments.Count.ToString(), context.UserArguments.Count);
         }
 
         #endregion
@@ -887,30 +910,32 @@ namespace vCommands
         }
 
         [MethodCommandData(Abstract = "Generates a random number.")]
-        static EvaluationResult rand(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult rand(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (rnd == null)
                 rnd = new Random();
 
-            EvaluationResult evalRes = null;
+            EvaluationResult evalRes = null, evalRes2 = null;
 
             switch (args.Length)
             {
                 case 0:
-                    return new EvaluationResult(0, rnd.NextDouble().ToString());
+                    var r1 = rnd.NextDouble();
+                    return new EvaluationResult(CommonStatusCodes.Success, null, r1.ToString(), r1);
 
                 case 1:
+                    int i = -1;
+                    
                     evalRes = args[0].Evaluate(context);
+                    evalRes2 = evalRes.CheckTruthValue(0, "rand", true);
+                    if (evalRes2 != null) return evalRes2;
+                    evalRes2 = evalRes.ExtractUniqueDatum<int>(0, "rand", ref i);
+                    if (evalRes2 != null) return evalRes2;
 
-                    if (!evalRes.TruthValue)
-                        return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
-
-                    uint i;
-
-                    if (uint.TryParse(evalRes.Output, out i))
-                        return new EvaluationResult(0, rnd.Next((int)i).ToString());
+                    if (int.TryParse(evalRes.Output, out i))
+                        return new EvaluationResult(CommonStatusCodes.Success, null, rnd.Next(i).ToString());
                     else
-                        return new EvaluationResult(2, string.Format("Failed to convert output of argument #{0} to an unsigned integer: {1}", i + 1, evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Failed to convert output of argument #{0} to an unsigned integer: {1}", i + 1, evalRes.Output));
 
                 case 2:
                     var bounds = new int[2];
@@ -920,63 +945,63 @@ namespace vCommands
                         evalRes = args[j].Evaluate(context);
 
                         if (!evalRes.TruthValue)
-                            return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", j + 1, evalRes.Status, evalRes.Output));
+                            return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", j + 1, evalRes.Status, evalRes.Output));
 
                         int b;
 
                         if (int.TryParse(evalRes.Output, out b))
                             bounds[j] = b;
                         else
-                            return new EvaluationResult(2, string.Format("Failed to convert output of argument #{0} to an unsigned integer: {1}", j + 1, evalRes.Output));
+                            return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Failed to convert output of argument #{0} to an unsigned integer: {1}", j + 1, evalRes.Output));
                     }
 
-                    return new EvaluationResult(0, rnd.Next(bounds[0], bounds[1]).ToString());
+                    return new EvaluationResult(CommonStatusCodes.Success, null, rnd.Next(bounds[0], bounds[1]).ToString());
 
                 default:
-                    return new EvaluationResult(1, "Too many arguments given to 'rand'.");
+                    return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Too many arguments given to 'rand'.");
             }
         }
 
         [MethodCommandData(Category = "Mathematics", Abstract = "Adds the given arguments together, converting input to numbers.")]
-        static EvaluationResult add(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult add(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             decimal res = 0m;
 
             if (args.Length < 2)
-                return new EvaluationResult(1, "Please provide at least two arguments to 'add'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide at least two arguments to 'add'.");
 
             for (int i = 0; i < args.Length; i++)
             {
                 var evalRes = args[i].Evaluate(context);
 
                 if (evalRes.Status != 0)
-                    return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
 
                 decimal d;
 
                 if (decimal.TryParse(evalRes.Output, out d))
                     res += d;
                 else
-                    return new EvaluationResult(3, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
+                    return new EvaluationResult(3, null, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
             }
 
-            return new EvaluationResult(0, res.ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null, res.ToString());
         }
 
         [MethodCommandData(Category = "Mathematics", Abstract = "Subtracts from the first argument the values of the other arguments, converting input to numbers.")]
-        static EvaluationResult sub(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult sub(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             decimal res = 0m;
 
             if (args.Length < 2)
-                return new EvaluationResult(1, "Please provide at least two arguments to 'sub'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide at least two arguments to 'sub'.");
 
             for (int i = 0; i < args.Length; i++)
             {
                 var evalRes = args[i].Evaluate(context);
 
                 if (evalRes.Status != 0)
-                    return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
 
                 decimal d;
 
@@ -988,52 +1013,52 @@ namespace vCommands
                         res -= d;
                 }
                 else
-                    return new EvaluationResult(3, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
+                    return new EvaluationResult(3, null, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
             }
 
-            return new EvaluationResult(0, res.ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null, res.ToString());
         }
 
         [MethodCommandData(Category = "Mathematics", Abstract = "Multiplies the given arguments together, converting input to numbers.")]
-        static EvaluationResult mul(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult mul(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             decimal res = 1m;
 
             if (args.Length < 2)
-                return new EvaluationResult(1, "Please provide at least two arguments to 'mul'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide at least two arguments to 'mul'.");
 
             for (int i = 0; i < args.Length; i++)
             {
                 var evalRes = args[i].Evaluate(context);
 
                 if (evalRes.Status != 0)
-                    return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
 
                 decimal d;
 
                 if (decimal.TryParse(evalRes.Output, out d))
                     res *= d;
                 else
-                    return new EvaluationResult(3, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
+                    return new EvaluationResult(3, null, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
             }
 
-            return new EvaluationResult(0, res.ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null, res.ToString());
         }
 
         [MethodCommandData(Category = "Mathematics", Abstract = "Divides the first argument by the values of the other arguments, converting input to numbers.")]
-        static EvaluationResult div(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult div(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             decimal res = 1m;
 
             if (args.Length < 2)
-                return new EvaluationResult(1, "Please provide at least two arguments to 'div'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide at least two arguments to 'div'.");
 
             for (int i = 0; i < args.Length; i++)
             {
                 var evalRes = args[i].Evaluate(context);
 
                 if (evalRes.Status != 0)
-                    return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
 
                 decimal d;
 
@@ -1045,22 +1070,22 @@ namespace vCommands
                         res /= d;
                 }
                 else
-                    return new EvaluationResult(3, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
+                    return new EvaluationResult(3, null, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
             }
-            
-            return new EvaluationResult(0, res.ToString());
+
+            return new EvaluationResult(CommonStatusCodes.Success, null, res.ToString());
         }
 
         [MethodCommandData(Category = "Mathematics", Abstract = "Outputs the rounded value of the given input number..")]
-        static EvaluationResult round(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult round(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 1 && args.Length != 2)
-                return new EvaluationResult(1, "'floor' must receive one or two argument, both numbers.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'floor' must receive one or two argument, both numbers.");
 
             var evalRes = args[0].Evaluate(context);
 
             if (!evalRes.TruthValue)
-                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
 
             int digits = 0;
 
@@ -1069,34 +1094,34 @@ namespace vCommands
                 evalRes = args[1].Evaluate(context);
 
                 if (!evalRes.TruthValue)
-                    return new EvaluationResult(3, string.Format("Evaluation of argument #2 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                    return new EvaluationResult(3, null, string.Format("Evaluation of argument #2 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
 
                 if (!int.TryParse(evalRes.Output, out digits))
-                    return new EvaluationResult(4, "The given second argument is not a number.");
+                    return new EvaluationResult(4, null, "The given second argument is not a number.");
                 if (digits < 0 || digits > 28)
-                    return new EvaluationResult(5, "The number of digits (second argument) must be between 0 and 28 inclusively.");
+                    return new EvaluationResult(5, null, "The number of digits (second argument) must be between 0 and 28 inclusively.");
             }
 
             decimal d;
 
             if (!decimal.TryParse(evalRes.Output, out d))
-                return new EvaluationResult(6, "The given first argument is not a number.");
+                return new EvaluationResult(6, null, "The given first argument is not a number.");
 
-            return new EvaluationResult(0, Math.Round(d, digits).ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null, Math.Round(d, digits).ToString());
         }
 
         [MethodCommandData(Category = "Comparison", Abstract = "Determines whether all given arguments are equal.")]
-        static EvaluationResult eq(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult eq(Toggler toggle, EvaluationContext context, Expression[] args)
         {
-            bool restrictive = !toggle.HasValue || !toggle.Value;
+            bool restrictive = toggle != Toggler.Off;
 
             if (args.Length < 2)
-                return new EvaluationResult(1, "Please provide at least two arguments to 'eq'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide at least two arguments to 'eq'.");
 
             switch (toggle)
             {
-                case null:
-                case true:
+                case Toggler.Neutral:
+                case Toggler.On:
                     string cur = null;
 
                     for (int i = 0; i < args.Length; i++)
@@ -1104,16 +1129,16 @@ namespace vCommands
                         var evalRes = args[i].Evaluate(context);
 
                         if (restrictive && evalRes.Status != 0)
-                            return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                            return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
 
                         if (cur == null)
                             cur = evalRes.Output;
                         else
                             if (cur != evalRes.Output)
-                                return new EvaluationResult(3, string.Format("Argument #{0}'s output is not equal to its predecessors'.", i + 1));
+                                return new EvaluationResult(3, null, string.Format("Argument #{0}'s output is not equal to its predecessors'.", i + 1));
                     }
 
-                    return new EvaluationResult(0, cur);
+                    return new EvaluationResult(CommonStatusCodes.Success, null, cur);
 
                 default:
                     bool? st = null;
@@ -1126,25 +1151,25 @@ namespace vCommands
                             st = evalRes.TruthValue;
                         else
                             if (st != evalRes.TruthValue)
-                                return new EvaluationResult(4, string.Format("Argument #{0}'s truth value is not equal to its predecessors'.", i + 1));
+                                return new EvaluationResult(4, null, string.Format("Argument #{0}'s truth value is not equal to its predecessors'.", i + 1));
                     }
 
-                    return new EvaluationResult(0, "All arguments have identical truth value");
+                    return new EvaluationResult(CommonStatusCodes.Success, null, "All arguments have identical truth value");
             }
         }
 
-        [MethodCommandData(Category = "Comparison", Abstract = "Determines whether the two given arguments.")]
-        static EvaluationResult neq(bool? toggle, EvaluationContext context, Expression[] args)
+        [MethodCommandData(Category = "Comparison", Abstract = "Determines whether the two given arguments are equal.")]
+        static EvaluationResult neq(Toggler toggle, EvaluationContext context, Expression[] args)
         {
-            bool restrictive = !toggle.HasValue || !toggle.Value;
+            bool restrictive = toggle != Toggler.Off;
 
             if (args.Length != 2)
-                return new EvaluationResult(1, "Please provide two arguments to 'neq'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide two arguments to 'neq'.");
 
             switch (toggle)
             {
-                case null:
-                case true:
+                case Toggler.Neutral:
+                case Toggler.On:
                     string[] ou = new string[2];
 
                     for (int i = 0; i < 2; i++)
@@ -1152,15 +1177,15 @@ namespace vCommands
                         var evalRes = args[i].Evaluate(context);
 
                         if (restrictive && evalRes.Status != 0)
-                            return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                            return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
 
                         ou[i] = args[i].Evaluate(context).Output;
                     }
-                    
+
                     if (ou[0] == ou[1])
-                        return new EvaluationResult(4, string.Format("{0} = {1}", ou[0], ou[1]));
+                        return new EvaluationResult(4, null, string.Format("{0} = {1}", ou[0], ou[1]));
                     else
-                        return new EvaluationResult(0, string.Format("{0} ≠ {1}", ou[0], ou[1]));
+                        return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("{0} ≠ {1}", ou[0], ou[1]));
 
                 default:
                     bool[] st = new bool[2];
@@ -1169,9 +1194,9 @@ namespace vCommands
                         st[i] = args[i].Evaluate(context).TruthValue;
 
                     if (st[0] == st[1])
-                        return new EvaluationResult(4, string.Format("{0} = {1}", st[0], st[1]));
+                        return new EvaluationResult(4, null, string.Format("{0} = {1}", st[0], st[1]));
                     else
-                        return new EvaluationResult(0, string.Format("{0} ≠ {1}", st[0], st[1]));
+                        return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("{0} ≠ {1}", st[0], st[1]));
             }
         }
 
@@ -1180,10 +1205,10 @@ namespace vCommands
         #region Strings
 
         [MethodCommandData(Abstract = "Extracts a substring from a string.")]
-        static EvaluationResult subs(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult subs(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 3)
-                return new EvaluationResult(1, "'subs' must receive 3 arguments: start index, length and a string.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'subs' must receive 3 arguments: start index, length and a string.");
 
             EvaluationResult evalRes;
 
@@ -1194,14 +1219,14 @@ namespace vCommands
                 evalRes = args[j].Evaluate(context);
 
                 if (!evalRes.TruthValue)
-                    return new EvaluationResult(2, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", j + 1, evalRes.Status, evalRes.Output));
+                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", j + 1, evalRes.Status, evalRes.Output));
 
                 int numba;
 
                 if (!int.TryParse(evalRes.Output, out numba))
-                    return new EvaluationResult(3, "The given argument is not an integer.");
+                    return new EvaluationResult(3, null, "The given argument is not an integer.");
                 if (numba < 0)  //  We will use 1-based indexes here.
-                    return new EvaluationResult(4, "The given argument must be greater than or equal to 0 (zero).");
+                    return new EvaluationResult(4, null, "The given argument must be greater than or equal to 0 (zero).");
 
                 bounds[j] = numba;
             }
@@ -1209,27 +1234,27 @@ namespace vCommands
             evalRes = args[2].Evaluate(context);
 
             if (!evalRes.TruthValue)
-                return new EvaluationResult(5, string.Format("Evaluation of argument #3 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                return new EvaluationResult(5, null, string.Format("Evaluation of argument #3 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
 
             if (bounds[0] > evalRes.Output.Length)
-                return new EvaluationResult(6, string.Format("Start index is {0}, but string only contains {1} characters.", bounds[0], evalRes.Output.Length));
+                return new EvaluationResult(6, null, string.Format("Start index is {0}, but string only contains {1} characters.", bounds[0], evalRes.Output.Length));
 
             if (bounds[0] + bounds[1] > evalRes.Output.Length)
-                return new EvaluationResult(7, string.Format("Resulted end index is {0}, but string only contains {1} characters.", bounds[0] + bounds[1], evalRes.Output.Length));
+                return new EvaluationResult(7, null, string.Format("Resulted end index is {0}, but string only contains {1} characters.", bounds[0] + bounds[1], evalRes.Output.Length));
 
-            return new EvaluationResult(0, evalRes.Output.Substring(bounds[0], bounds[1]));
+            return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output.Substring(bounds[0], bounds[1]));
         }
 
         [MethodCommandData(Abstract = "Formats the given first argument with the other arguments.")]
-        static EvaluationResult format(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult format(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length < 1)
-                return new EvaluationResult(1, "'format' must be given at least one argument: a format string.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'format' must be given at least one argument: a format string.");
 
             var evalRes = args[0].Evaluate(context);
 
             if (!evalRes.TruthValue)
-                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
 
             var format = evalRes.Output;
 
@@ -1240,7 +1265,7 @@ namespace vCommands
                 evalRes = args[i].Evaluate(context);
 
                 if (!evalRes.TruthValue)
-                    return new EvaluationResult(3, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                    return new EvaluationResult(3, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
 
                 frmargs[i - 1] = evalRes.Output;
             }
@@ -1251,10 +1276,10 @@ namespace vCommands
             }
             catch (FormatException x)
             {
-                return new EvaluationResult(4, string.Format("There is an issue with the format string: {0}", x.Message));
+                return new EvaluationResult(4, null, string.Format("There is an issue with the format string: {0}", x.Message));
             }
 
-            return new EvaluationResult(0, format);
+            return new EvaluationResult(CommonStatusCodes.Success, null, format);
         }
 
         #endregion
@@ -1262,77 +1287,61 @@ namespace vCommands
         #region Variables
 
         [MethodCommandData(Abstract = "Retrieves the value of a variable from the host.")]
-        static EvaluationResult cvar(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult cvar(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             switch (toggle)
             {
-                case null:
+                case Toggler.Neutral:
                     if (args.Length != 1)
-                        return new EvaluationResult(1, "'cvar' must receive one argument: a name.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'cvar' must receive one argument: a name.");
                     break;
 
-                case false:
-                    return new EvaluationResult(4, "Operation not supported.");
-
-                    /*if (args.Length != 1)
-                        return new EvaluationResult(1, "'-cvar' must receive one argument: a name.");
-                    break;*/
+                case Toggler.Off:
+                    if (args.Length != 2)
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'-cvar' must receive two arguments: a name and a value.");
+                    break;
 
                 default:
                     if (args.Length != 2)
-                        return new EvaluationResult(1, "'+cvar' must receive two arguments: a name and a value.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'+cvar' must receive two arguments: a name and a value.");
                     break;
             }
 
             var evalRes = args[0].Evaluate(context);
 
             if (!evalRes.TruthValue)
-                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+
+            var variable = context.Host.GetVariable(evalRes.Output);
+
+            if (variable == null)
+                return new EvaluationResult(CommonStatusCodes.CvarNotFound, null, "There is no command variable with the specified name.");
 
             switch (toggle)
             {
-                case null:
-                    string res1 = context.Host.GetVariable(evalRes.Output).StringValue;
+                case Toggler.Neutral:
+                    return new EvaluationResult(CommonStatusCodes.Success, null, variable.StringValue, variable);
 
-                    if (res1 != null)
-                        return new EvaluationResult(0, res1);
-                    else
-                        return new EvaluationResult(4, "There is no command variable with the specified name.");
-
-                /*case false:
-                    if (context.Locals.ContainsKey(evalRes.Output))
-                    {
-                        context.Locals.Remove(evalRes.Output);
-
-                        return new EvaluationResult(0, "Local removed.");
-                    }
-                    else
-                        return new EvaluationResult(4, "There is no local variable with the specified name.");*/
+                case Toggler.Off:
+                    return variable.ChangeValue(context, args[1], ChangeType.FromDataOrOutput);
 
                 default:
-                    var variable = context.Host.GetVariable(evalRes.Output);
-
-                    if (variable != null)
-                    {
-                        return variable.ChangeValue(context, args[1]);
-                    }
-                    else
-                        return new EvaluationResult(4, "There is no command variable with the specified name.");
+                    return variable.ChangeValue(context, args[1], ChangeType.FromOutput);
             }
         }
 
         #endregion
 
         [MethodCommandData(Abstract = "Searches for a manual in the library by title.")]
-        static EvaluationResult man(bool? toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult man(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length < 1)
-                return new EvaluationResult(1, "'man' must receive at least one argument: a regex or name and additional flags.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'man' must receive at least one argument: a regex or name and additional flags.");
 
             var evalRes = args[0].Evaluate(context);
 
             if (!evalRes.TruthValue)
-                return new EvaluationResult(2, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
 
             var rgx = new Regex(evalRes.Output);
 
@@ -1348,7 +1357,7 @@ namespace vCommands
                 evalRes = args[i].Evaluate(context);
 
                 if (!evalRes.TruthValue)
-                    return new EvaluationResult(3, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
 
                 switch (evalRes.Output)
                 {
@@ -1373,17 +1382,17 @@ namespace vCommands
                     //  Display information
 
                     case "jt":
-                        if (displayLocation != 0) return new EvaluationResult(4, string.Format("A display location was already specified before argument #{0}", i + 1));
+                        if (displayLocation != 0) return new EvaluationResult(4, null, string.Format("A display location was already specified before argument #{0}", i + 1));
                         displayLocation = 1;
                         break;
 
                     case "ja":
-                        if (displayLocation != 0) return new EvaluationResult(4, string.Format("A display location was already specified before argument #{0}", i + 1));
+                        if (displayLocation != 0) return new EvaluationResult(4, null, string.Format("A display location was already specified before argument #{0}", i + 1));
                         displayLocation = 2;
                         break;
 
                     case "ji":
-                        if (displayLocation != 0) return new EvaluationResult(4, string.Format("A display location was already specified before argument #{0}", i + 1));
+                        if (displayLocation != 0) return new EvaluationResult(4, null, string.Format("A display location was already specified before argument #{0}", i + 1));
                         displayLocation = 3;
                         break;
 
@@ -1392,13 +1401,13 @@ namespace vCommands
 
                         if (str.StartsWith("driver="))
                         {
-                            if (displayLocation != 0) return new EvaluationResult(4, string.Format("A display location was already specified before argument #{0}", i + 1));
+                            if (displayLocation != 0) return new EvaluationResult(4, null, string.Format("A display location was already specified before argument #{0}", i + 1));
                             displayLocation = -1;
 
                             var drvn = str.Substring(7);
 
                             if (drvn.Length == 0)
-                                return new EvaluationResult(13, string.Format("Something must follow \"driver=\" at argument #{0}.", i + 1));
+                                return new EvaluationResult(13, null, string.Format("Something must follow \"driver=\" at argument #{0}.", i + 1));
 
                             drv = context.Host.ManualDrivers[drvn];
 
@@ -1411,7 +1420,7 @@ namespace vCommands
                                 switch (drvs.Length)
                                 {
                                     case 0:
-                                        return new EvaluationResult(11, "No driver found matching the given mask.");
+                                        return new EvaluationResult(11, null, "No driver found matching the given mask.");
 
                                     case 1:
                                         drv = drvs[0];
@@ -1431,19 +1440,19 @@ namespace vCommands
                                             sb.Append(drvs[i].Name);
                                         }
 
-                                        return new EvaluationResult(12, sb.ToString());
+                                        return new EvaluationResult(12, null, sb.ToString());
                                 }
                             }
                         }
                         else if (str.StartsWith("section="))
                         {
-                            if (displayLocation != 0) return new EvaluationResult(4, string.Format("A display location was already specified before argument #{0}", i + 1));
+                            if (displayLocation != 0) return new EvaluationResult(4, null, string.Format("A display location was already specified before argument #{0}", i + 1));
                             displayLocation = 4;
 
                             var scss = str.Substring(8);
 
                             if (scss.Length == 0)
-                                return new EvaluationResult(30, string.Format("Something must follow \"section=\" at argument #{0}", i + 1));
+                                return new EvaluationResult(30, null, string.Format("Something must follow \"section=\" at argument #{0}", i + 1));
 
                             var scsp = scss.Split('.');
                             scsi = new int[scsp.Length];
@@ -1453,10 +1462,10 @@ namespace vCommands
                                 int tmp = -1;
 
                                 if (!int.TryParse(scsp[j], out tmp))
-                                    return new EvaluationResult(31, string.Format("Section #{0} in argument #{1} is not an integer.", j + 1, i + 1));
+                                    return new EvaluationResult(31, null, string.Format("Section #{0} in argument #{1} is not an integer.", j + 1, i + 1));
 
                                 if (tmp < 1)
-                                    return new EvaluationResult(32, string.Format("Section #{0} in argument #{1} must be strictly positive.", j + 1, i + 1));
+                                    return new EvaluationResult(32, null, string.Format("Section #{0} in argument #{1} must be strictly positive.", j + 1, i + 1));
 
                                 scsi[j] = tmp - 1;  //  The command takes 1-based indexes; the inner representation is 0-based.
                             }
@@ -1467,7 +1476,7 @@ namespace vCommands
             }
 
             if (ll == 0)
-                return new EvaluationResult(5, "Must have at least one specified lookup location.");
+                return new EvaluationResult(5, null, "Must have at least one specified lookup location.");
 
             //
 
@@ -1483,7 +1492,7 @@ namespace vCommands
                 switch (mans.Length)
                 {
                     case 0:
-                        return new EvaluationResult(20, "No manual(s) found matching the given arguments.");
+                        return new EvaluationResult(20, null, "No manual(s) found matching the given arguments.");
 
                     case 1:
                         man = mans[0];
@@ -1503,17 +1512,17 @@ namespace vCommands
                             sb.Append(mans[i].Title);
                         }
 
-                        return new EvaluationResult(21, sb.ToString());
+                        return new EvaluationResult(21, null, sb.ToString());
                 }
             }
 
             switch (displayLocation)
             {
                 case 1:
-                    return new EvaluationResult(0, man.Title);
+                    return new EvaluationResult(CommonStatusCodes.Success, null, man.Title);
 
                 case 2:
-                    return new EvaluationResult(0, man.Abstract);
+                    return new EvaluationResult(CommonStatusCodes.Success, null, man.Abstract);
 
                 case 3:
                     var b = new StringBuilder();
@@ -1522,19 +1531,19 @@ namespace vCommands
                     foreach (var s in man.Sections)
                         ManualSections.indexSection(b, s, ++i, string.Empty, null, " ", ".");
 
-                    return new EvaluationResult(0, b.ToString());
+                    return new EvaluationResult(CommonStatusCodes.Success, null, b.ToString());
 
                 case 4:
                     var sc = man[scsi];
 
                     if (sc == null)
-                        return new EvaluationResult(33, string.Format("Could not find the specified section in the manual."));
+                        return new EvaluationResult(33, null, string.Format("Could not find the specified section in the manual."));
 
-                    return new EvaluationResult(0, sc.Body);
+                    return new EvaluationResult(CommonStatusCodes.Success, null, sc.Body);
 
                 default:
                     if (drv == null)
-                        return new EvaluationResult(10, "There is no driver to display the manual with.");
+                        return new EvaluationResult(10, null, "There is no driver to display the manual with.");
 
                     return drv.Display(context, man);
             }

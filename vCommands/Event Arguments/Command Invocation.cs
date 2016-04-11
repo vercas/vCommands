@@ -6,6 +6,7 @@ using System.Text;
 
 namespace vCommands.EventArguments
 {
+    using Commands;
     using Parsing.Expressions;
     
     /// <summary>
@@ -17,7 +18,7 @@ namespace vCommands.EventArguments
         /// <summary>
         /// Gets the toggle status of the command.
         /// </summary>
-        public Boolean? Toggle { get; internal set; }
+        public Toggler Toggle { get; internal set; }
 
         /// <summary>
         /// Gets the arguments passed to the command.
@@ -30,7 +31,7 @@ namespace vCommands.EventArguments
         /// <param name="context"></param>
         /// <param name="toggle"></param>
         /// <param name="args"></param>
-        public CommandInvocationEventArgs(EvaluationContext context, bool? toggle, Expression[] args)
+        public CommandInvocationEventArgs(EvaluationContext context, Toggler toggle, Expression[] args)
             : base(context, false, null)
         {
             this.Toggle = toggle;

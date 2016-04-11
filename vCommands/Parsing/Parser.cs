@@ -5,6 +5,7 @@ using System.Text;
 
 namespace vCommands.Parsing
 {
+    using Commands;
     using Expressions;
 
     /// <summary>
@@ -286,7 +287,7 @@ namespace vCommands.Parsing
                         if (tok.Content != "+" && tok.Content != "-")
                             throw new FormatException("Invalid toggler token!");
 
-                        lastCommand = new CommandInvocationExpression(toggle: tok.Content == "+");
+                        lastCommand = new CommandInvocationExpression(toggle: tok.Content == "+" ? Toggler.On : Toggler.Off);
 
                         //  Conditionals have higher priority than series.
 
@@ -343,7 +344,7 @@ namespace vCommands.Parsing
                         if (lastCommand == null)
                             throw new FormatException("An argument seems to not be preceeded by a command.");
 
-                        lastCommand.AddArgument(new ConstantExpression(tok.Content));
+                        lastCommand.AddArgument(ConstantExpression.Fetch(tok.Content));
 
                         break;
 

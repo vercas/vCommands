@@ -26,7 +26,7 @@ namespace vCommands
         /// <summary>
         /// Gets a dictionary of iterators available in the context.
         /// </summary>
-        public Dictionary<string, string> Locals { get; internal set; }
+        public Dictionary<string, EvaluationResult> Locals { get; internal set; }
 
         /// <summary>
         /// Gets an object representing the sate of the evaluation.
@@ -40,7 +40,7 @@ namespace vCommands
         /// <param name="userArguments">optional; An list of expressions as arguments to a user command.</param>
         /// <param name="locals">optional; A list of local variables (pairs of names and values).</param>
         /// <param name="state">optional; Object representing the state of the evaluation.</param>
-        public EvaluationContext(CommandHost host, IList<Expression> userArguments = null, IDictionary<string, string> locals = null, object state = null)
+        public EvaluationContext(CommandHost host, IList<Expression> userArguments = null, IDictionary<string, EvaluationResult> locals = null, object state = null)
         {
             if (host == null)
                 throw new ArgumentNullException("host");
@@ -51,9 +51,9 @@ namespace vCommands
                 this.UserArguments = new ReadOnlyCollection<Expression>(userArguments);
 
             if (locals == null)
-                Locals = new Dictionary<string, string>();
+                Locals = new Dictionary<string, EvaluationResult>();
             else
-                Locals = new Dictionary<string, string>(locals);
+                Locals = new Dictionary<string, EvaluationResult>(locals);
 
             this.State = state;
         }
@@ -82,7 +82,7 @@ namespace vCommands
         /// <param name="value">The value of the local.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException">Thrown when either of the given arguments is null.</exception>
-        public EvaluationContext WithLocal(string name, string value)
+        public EvaluationContext WithLocal(string name, EvaluationResult value)
         {
             if (name == null)
                 throw new ArgumentNullException("name");
@@ -102,7 +102,7 @@ namespace vCommands
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException">Thrown when the given arguments is null.</exception>
         /// <exception cref="System.ArgumentException">Thrown when a key or a value in the enumerable is null.</exception>
-        public EvaluationContext WithLocal(IEnumerable<KeyValuePair<string, string>> locals)
+        public EvaluationContext WithLocal(IEnumerable<KeyValuePair<string, EvaluationResult>> locals)
         {
             if (locals == null)
                 throw new ArgumentNullException("locals");

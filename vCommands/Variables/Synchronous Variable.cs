@@ -50,7 +50,7 @@ namespace vCommands.Variables
                 T temp;
 
                 if (!Setter(value, out temp))
-                    throw new FormatException(string.Format("Given data is not of the correct format. It should match a {0}."));
+                    throw new FormatException(string.Format("Given data is not of the correct format. It should match a {0}.", typeof(T).Name));
 
                 lock (locker)
                     val = temp;
@@ -77,6 +77,15 @@ namespace vCommands.Variables
         public override string ToString()
         {
             return string.Format("[Command Synchronous Variable: {0} | {1}]", Name, val);
+        }
+
+        /// <summary>
+        /// Servers as a hash function for <see cref="vCommands.Variables.SynchronousVariable{T}"/>.
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            return Name.GetHashCode() ^ 0x5BBADBDF;
         }
     }
 }
