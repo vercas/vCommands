@@ -21,9 +21,17 @@ namespace vCommands
         /// </summary>
         ClrException = -1,
         /// <summary>
-        /// Invocation was cancelled by 
+        /// Invocation was cancelled by the host environment.
         /// </summary>
         InvocationCanceled = -2,
+        /// <summary>
+        /// Maximum call depth for the host exceeded.
+        /// </summary>
+        InvocationDepthExceeded = -3,
+        /// <summary>
+        /// Invocation has been going on for too long.
+        /// </summary>
+        Timeout = -4,
 
         /// <summary>
         /// Command does not support given toggler.
@@ -103,6 +111,10 @@ namespace vCommands
         /// Data of a specific type must be unique.
         /// </summary>
         TypedDataDuplicate = 31,
+        /// <summary>
+        /// The invocation state is invalid.
+        /// </summary>
+        InvalidInvocationState = 32,
 
         /// <summary>
         /// An expression in an evaluation sequence returned non-zero.
