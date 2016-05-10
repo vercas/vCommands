@@ -29,7 +29,7 @@ namespace vCommands.Commands
         public String Expression { get; internal set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="vCommands.Commands.UserCommand"/> class with the given name and function.
+        /// Initializes a new instance of the <see cref="vCommands.Commands.Alias"/> class with the given name and function.
         /// </summary>
         /// <param name="name">The name of the command, used to find and invoke it.</param>
         /// <param name="expr">The expression to execute with the command.</param>
@@ -66,7 +66,7 @@ namespace vCommands.Commands
                 inputs[i + 1] = evalRes.Output;
             }
 
-            return context.Host.Evaluate(string.Join(" ", inputs));
+            return Parsing.Parser.Parse(string.Join(" ", inputs)).Evaluate(context);
         }
     }
 }
