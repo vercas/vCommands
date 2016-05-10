@@ -54,6 +54,7 @@
     <Compile Include="Default Manuals.cs" />
     <Compile Include="Evaluation Context.cs" />
     <Compile Include="Event Arguments\Contextually Cancellable Event Arguments.cs" />
+    <Compile Include="Event Arguments\Host Command Mutation.cs" />
     <Compile Include="Event Arguments\Host Variable Change.cs" />
     <Compile Include="Event Arguments\Variable Change.cs" />
     <Compile Include="Event Arguments\Host Command Invocation.cs" />
