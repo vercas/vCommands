@@ -7,7 +7,7 @@
             <body>The first argument to the command is a title or a regular expression.
 If any manual has that exact title, it is instantly returned. (of course, assumming that the title is included in the lookup location)
 
-Otherwise, the argument is treated as a regular exception and checked against different parts of the manual, determined by the flags documented in section 1.1.
+Otherwise, the argument is treated as a regular expression and checked against different parts of the manual, determined by the flags documented in section 1.1.
 
 If only part of a manual is needeed, such as title, abstract or index, other flags are available, documented in section 1.2.
 
