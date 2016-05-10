@@ -253,7 +253,7 @@ namespace vCommands
             Commands = all.ToArray();
         }
 
-        public static void Register(CommandHost host, bool includeManual, bool includeMath)
+        public static void Register(CommandHost host, bool includeManual, bool includeMath, bool shortHelp)
         {
             for (int i = 0; i < Commands.Length; i++)
             {
@@ -297,82 +297,142 @@ namespace vCommands
 
                 return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Must not provide more than one argument to 'help', and that argument may be a regular expression.");
             }
-            else
+            else if (args.Length == 1)
             {
-                if (args.Length == 1)
+                var evalRes = args[0].Evaluate(context);
+
+                var evalRes2 = evalRes.CheckTruthValue(0, "help", true);
+                if (evalRes2 != null) return evalRes2;
+
+                var regex = new Regex(evalRes.Output);
+
+                if (toggle == Toggler.Neutral)
                 {
-                    var evalRes = args[0].Evaluate(context);
+                    cmds = cmds.Where(kv => regex.IsMatch(kv.Key));
+                    vars = vars.Where(kv => regex.IsMatch(kv.Key));
 
-                    var evalRes2 = evalRes.CheckTruthValue(0, "help", true);
-                    if (evalRes2 != null) return evalRes2;
-
-                    var regex = new Regex(evalRes.Output);
-
-                    if (toggle == Toggler.Neutral)
-                    {
-                        cmds = cmds.Where(kv => regex.IsMatch(kv.Key));
-                        vars = vars.Where(kv => regex.IsMatch(kv.Key));
-
+                    if (!context.Host.ShortHelp)
                         ob.Append("Looking for regular expression in command/variable names: ");
+                }
+                else if (toggle == Toggler.On)
+                {
+                    if (context.Host.ShortHelp)
+                    {
+                        cmds = cmds.Where(kv => kv.Key == evalRes.Output);
+                        vars = vars.Where(kv => kv.Key == evalRes.Output);
                     }
-                    else if (toggle == Toggler.On)
+                    else
                     {
                         cmds = cmds.Where(kv => regex.IsMatch(kv.Key) || regex.IsMatch(kv.Value.Abstract));
                         vars = vars.Where(kv => regex.IsMatch(kv.Key) || regex.IsMatch(kv.Value.Abstract));
 
                         ob.Append("Looking for regular expression in command/variable names and descriptions: ");
                     }
-                    else
-                    {
-                        cmds = cmds.Where(kv => regex.IsMatch(kv.Value.Abstract));
-                        vars = vars.Where(kv => regex.IsMatch(kv.Value.Abstract));
-
-                        ob.Append("Looking for regular expression in command/variable descriptions: ");
-                    }
-
-                    ob.AppendLine(evalRes.Output);
                 }
                 else
                 {
-                    ob.AppendLine("Listing all commands and variables with descriptions:");
+                    cmds = cmds.Where(kv => regex.IsMatch(kv.Value.Abstract));
+                    vars = vars.Where(kv => regex.IsMatch(kv.Value.Abstract));
+
+                    if (!context.Host.ShortHelp)
+                        ob.Append("Looking for regular expression in command/variable descriptions: ");
                 }
 
-                //ob.AppendLine();
+                if (!context.Host.ShortHelp)
+                    ob.AppendLine(evalRes.Output);
             }
+            else if (!context.Host.ShortHelp)
+                ob.AppendLine("Listing all commands and variables with descriptions:");
 
-            foreach (var g in cmds.GroupBy(kv => kv.Value.Category).OrderBy(g => g.Key))
+            if (context.Host.ShortHelp)
             {
-                ob.AppendLine();
-                ob.AppendFormat("\t{0}:", g.Key);
-                ob.AppendLine();
-                ob.AppendLine();
-
-                foreach (var kv in g.OrderBy(kv => kv.Key))
+                foreach (var g in cmds.GroupBy(kv => kv.Value.Category).OrderBy(g => g.Key))
                 {
-                    ob.AppendFormat("{1}\t- {2}{0}", Environment.NewLine, kv.Value.Name, kv.Value.Abstract);
-                    ccnt++;
+                    if (gcnt > 0)
+                        ob.AppendLine(".");
+
+                    ob.Append(g.Key);
+
+                    bool first = true;
+
+                    foreach (var kv in g.OrderBy(kv => kv.Key))
+                    {
+                        ob.AppendFormat("{1} {0}", kv.Value.Name, first ? ":" : ",");
+
+                        ccnt++;
+                        first = false;
+                    }
+                    
+                    gcnt++;
                 }
 
-                gcnt++;
-            }
+                if (vars.Any())
+                {
+                    if (gcnt > 0)
+                        ob.AppendLine(".");
 
-            if (vars.Any())
+                    ob.Append("Variables");
+
+                    foreach (var kv in vars.OrderBy(kv => kv.Key))
+                    {
+                        ob.AppendFormat("{1} {0}", kv.Value.Name, vcnt == 0 ? ":" : ",");
+                        vcnt++;
+                    }
+                }
+
+                if (ccnt == 1 && vcnt == 0)
+                    ob.AppendLine(" - " + cmds.First().Value.Abstract);
+                else if (ccnt == 0 && vcnt == 1)
+                    ob.AppendLine(" - " + vars.First().Value.Abstract);
+                else
+                {
+                    if ((vcnt == 0 && gcnt > 0) || vcnt > 0)
+                        ob.AppendLine(".");
+
+                    ob.AppendFormat("{3} shows {0} command{4} under {1} categor{5} and {2} variable{6}."
+                        , ccnt, gcnt, vcnt > 0 ? vcnt.ToString() : "no", AssemblyName
+                        , ccnt == 1 ? "" : "s", gcnt == 1 ? "y" : "ies", vcnt == 1 ? "" : "s");
+                    ob.AppendLine();
+                }
+            }
+            else
             {
-                ob.AppendLine();
-                ob.AppendLine("\tVariables:");
-                ob.AppendLine();
-
-                foreach (var kv in vars.OrderBy(kv => kv.Key))
+                foreach (var g in cmds.GroupBy(kv => kv.Value.Category).OrderBy(g => g.Key))
                 {
-                    ob.AppendFormat("{1}\t- {2}{0}", Environment.NewLine, kv.Value.Name, kv.Value.Abstract);
-                    vcnt++;
-                }
-            }
+                    ob.AppendLine();
+                    ob.AppendFormat("\t{0}:", g.Key);
+                    ob.AppendLine();
+                    ob.AppendLine();
 
-            ob.AppendLine();
-            ob.AppendFormat("Shown {0} commands under {1} categories and {2} variables.", ccnt, gcnt, vcnt > 0 ? vcnt.ToString() : "no");
-            ob.AppendLine();
-            ob.AppendFormat("Powered by {0}.", AssemblyName);
+                    foreach (var kv in g.OrderBy(kv => kv.Key))
+                    {
+                        ob.AppendFormat("{1}\t- {2}{0}", Environment.NewLine, kv.Value.Name, kv.Value.Abstract);
+                        ccnt++;
+                    }
+
+                    gcnt++;
+                }
+
+                if (vars.Any())
+                {
+                    ob.AppendLine();
+                    ob.AppendLine("\tVariables:");
+                    ob.AppendLine();
+
+                    foreach (var kv in vars.OrderBy(kv => kv.Key))
+                    {
+                        ob.AppendFormat("{1}\t- {2}{0}", Environment.NewLine, kv.Value.Name, kv.Value.Abstract);
+                        vcnt++;
+                    }
+                }
+
+                ob.AppendLine();
+                ob.AppendFormat("Shown {0} command{3} under {1} categor{4} and {2} variable{5}."
+                    , ccnt, gcnt, vcnt > 0 ? vcnt.ToString() : "no"
+                    , ccnt == 1 ? "" : "s", gcnt == 1 ? "y" : "ies", vcnt == 1 ? "" : "s");
+                ob.AppendLine();
+                ob.AppendFormat("Powered by {0}.", AssemblyName);
+            }
 
             return new EvaluationResult(CommonStatusCodes.Success, null, ob.ToString());
         }
@@ -778,6 +838,7 @@ namespace vCommands
 
             evalRes2 = evalRes.ExtractUniqueDatum<int>(0, "arg", ref i);
             if (evalRes2 != null) return evalRes2;
+
             if (i < 1)  //  We will use 1-based indexes here.
                 return new EvaluationResult(CommonStatusCodes.UserArgumentIndexInvalid, null, string.Format("Argument index ({0}) must be strictly positive.", i), evalRes, i);
             if (i > context.UserArguments.Count)
@@ -794,7 +855,8 @@ namespace vCommands
             if (context.UserArguments == null)
                 return new EvaluationResult(CommonStatusCodes.UserArgumentsMissing, null, "There are no user arguments in the execution context.");
 
-            return new EvaluationResult(CommonStatusCodes.Success, null, context.UserArguments.Count.ToString(), context.UserArguments.Count);
+            return new EvaluationResult(CommonStatusCodes.Success, null, context.UserArguments.Count.ToString()
+                , context.UserArguments.Count, (double)context.UserArguments.Count);
         }
 
         #endregion
