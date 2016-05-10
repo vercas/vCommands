@@ -19,8 +19,8 @@ namespace vCommands
     public sealed class CommandHost
     {
         //internal SortedList<string, Command> cmds = new SortedList<string, Command>();
-        internal IDictionary<string, Command> cmds = new Dictionary<string, Command>();
-        internal IDictionary<string, IVariable> vars = new Dictionary<string, IVariable>();
+        internal Dictionary<string, Command> cmds = new Dictionary<string, Command>();
+        internal Dictionary<string, IVariable> vars = new Dictionary<string, IVariable>();
 
         private object cmds_locker = new object(), vars_locker = new object();
 
@@ -35,12 +35,24 @@ namespace vCommands
         public DriverCollection ManualDrivers { get; internal set; }
 
         /// <summary>
+        /// Gets a value indicating whether the help command's output is shortened or not.
+        /// </summary>
+        public Boolean ShortHelp { get; internal set; }
+
+        /// <summary>
+        /// Gets the maximum depth of the invocation chain.
+        /// </summary>
+        public Int32 MaxDepth { get; internal set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="vCommands.CommandHost"/> class.
         /// </summary>
-        public CommandHost()
+        public CommandHost(int maxDepth = 1000)
         {
             Library = new Library();
             ManualDrivers = new DriverCollection();
+            ShortHelp = false;
+            MaxDepth = maxDepth;
         }
 
         #region Commands
@@ -59,28 +71,33 @@ namespace vCommands
                 throw new ArgumentNullException("cmd");
 
             //return cmds.TryAdd(cmd.Name, cmd);
+            Command existing = null;
+            bool added = false;
 
             lock (cmds_locker)
-            {
-                Command existing = null;
-
                 if (cmds.TryGetValue(cmd.Name, out existing))
                 {
                     if (overwrite)
                     {
-                        if (overwriteSameTypeOnly && existing.GetType() != cmd.GetType())
-                            return false;
+                        if (overwriteSameTypeOnly && existing.GetType() == cmd.GetType())
+                        {
+                            cmds[cmd.Name] = cmd;
 
-                        cmds[cmd.Name] = cmd;
+                            added = true;
+                        }
                     }
-                    else
-                        return false;
                 }
                 else
+                {
                     cmds.Add(cmd.Name, cmd);
-            }
 
-            return true;
+                    added = true;
+                }
+
+            if (added)
+                this.OnCommandMutation(new HostCommandMutationEventArgs(cmd.Name, existing, cmd));
+
+            return added;
         }
 
         /// <summary>
@@ -94,8 +111,17 @@ namespace vCommands
             if (name == null)
                 throw new ArgumentNullException("name");
 
+            Command cmd;
+            bool removed = false;
+
             lock (cmds_locker)
-                return cmds.Remove(name);
+                if (cmds.TryGetValue(name, out cmd))
+                    removed = cmds.Remove(name);
+
+            if (removed)
+                this.OnCommandMutation(new HostCommandMutationEventArgs(name, cmd, null));
+
+            return removed;
         }
 
         /// <summary>
@@ -110,16 +136,18 @@ namespace vCommands
             if (name == null)
                 throw new ArgumentNullException("name");
 
-            lock (cmds_locker)
-            {
-                Command cmd;
+            Command cmd;
+            bool removed = false;
 
+            lock (cmds_locker)
                 if (cmds.TryGetValue(name, out cmd))
                     if (cmd is T)
-                        return cmds.Remove(name);
-            }
+                        removed = cmds.Remove(name);
 
-            return false;
+            if (removed)
+                this.OnCommandMutation(new HostCommandMutationEventArgs(name, cmd, null));
+
+            return removed;
         }
 
         /// <summary>
@@ -164,9 +192,11 @@ namespace vCommands
         /// <summary>
         /// Registers a default set of commands to the host.
         /// </summary>
-        public void RegisterDefaultCommands(bool includeManual = true, bool includeMath = true)
+        public void RegisterDefaultCommands(bool includeManual = true, bool includeMath = true, bool shortHelp = false)
         {
-            DefaultCommands.Register(this, includeManual, includeMath);
+            ShortHelp = shortHelp;
+
+            DefaultCommands.Register(this, includeManual, includeMath, shortHelp);
 
             if (includeManual)
                 DefaultManuals.Register(Library, ManualDrivers);
@@ -281,6 +311,20 @@ namespace vCommands
 
         #region Events
 
+        /// <summary>
+        /// Raised when a command is added, removed or replaced.
+        /// </summary>
+        public event TypedEventHandler<CommandHost, HostCommandMutationEventArgs> CommandMutation;
+
+        /// <summary>
+        /// Raisese the <see cref="vCommands.CommandHost.CommandMutation"/> event.
+        /// </summary>
+        /// <param name="e">A <see cref="vCommands.EventArguments.HostCommandMutationEventArgs"/> that contains event data.</param>
+        internal void OnCommandMutation(HostCommandMutationEventArgs e)
+        {
+            CommandMutation?.Invoke(this, e);
+        }
+
 #if HCIE
         /// <summary>
         /// Raised before a command is invoked.
@@ -293,12 +337,7 @@ namespace vCommands
         /// <param name="e">A <see cref="vCommands.EventArguments.HostCommandInvocationEventArgs"/> that contains event data.</param>
         internal void OnInvocation(HostCommandInvocationEventArgs e)
         {
-            var ev = CommandInvocation;
-
-            if (ev != null)
-            {
-                ev(this, e);
-            }
+            CommandInvocation?.Invoke(this, e);
         }
 #endif
 
@@ -314,12 +353,7 @@ namespace vCommands
         /// <param name="e">A <see cref="vCommands.EventArguments.HostVariableChangeEventArgs"/> that contains event data.</param>
         internal void OnChange(HostVariableChangeEventArgs e)
         {
-            var ev = VariableChange;
-
-            if (ev != null)
-            {
-                ev(this, e);
-            }
+            VariableChange?.Invoke(this, e);
         }
 #endif
 
