@@ -34,13 +34,19 @@ namespace vCommands
         public Object State { get; internal set; }
 
         /// <summary>
+        /// Gets the depth of the evaluation.
+        /// </summary>
+        public Int32 Depth { get; internal set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="vCommands.EvaluationContext"/> class with the specified status and output.
         /// </summary>
         /// <param name="host">The <see cref="vCommands.CommandHost"/> under which the evaluation occurs.</param>
         /// <param name="userArguments">optional; An list of expressions as arguments to a user command.</param>
         /// <param name="locals">optional; A list of local variables (pairs of names and values).</param>
         /// <param name="state">optional; Object representing the state of the evaluation.</param>
-        public EvaluationContext(CommandHost host, IList<Expression> userArguments = null, IDictionary<string, EvaluationResult> locals = null, object state = null)
+        /// <param name="depth">optional; The depth of the invocation(s) in this context.</param>
+        public EvaluationContext(CommandHost host, IList<Expression> userArguments = null, IDictionary<string, EvaluationResult> locals = null, object state = null, int depth = 0)
         {
             if (host == null)
                 throw new ArgumentNullException("host");
@@ -56,6 +62,7 @@ namespace vCommands
                 Locals = new Dictionary<string, EvaluationResult>(locals);
 
             this.State = state;
+            this.Depth = depth;
         }
 
         /// <summary>
@@ -120,6 +127,16 @@ namespace vCommands
             }
 
             return ret;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="vCommands.EvaluationContext"/> with the properties of the current one, but with a change in depth.
+        /// </summary>
+        /// <param name="change">The change in depth.</param>
+        /// <returns></returns>
+        public EvaluationContext WithChangedDepth(int change = 1)
+        {
+            return new EvaluationContext(this.Host, this.UserArguments, this.Locals, this.State, this.Depth + change);
         }
     }
 }

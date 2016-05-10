@@ -24,9 +24,12 @@ namespace vCommands.Parsing.Expressions
 
             EvaluationResult res;
 
+            if (context.Depth >= context.Host.MaxDepth)
+                return new EvaluationResult(CommonStatusCodes.InvocationDepthExceeded, this, "Invocation depth exceeded.");
+
             try
             {
-                Evaluate(context, out res);
+                Evaluate(context.WithChangedDepth(+1), out res);
 
                 res.Expression = this;
                 return res;
