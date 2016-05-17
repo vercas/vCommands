@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Globalization;
 
 namespace vCommands.Variables
 {
@@ -164,12 +162,16 @@ namespace vCommands.Variables
             var evalRes = value.Evaluate(context);
 
             if (!evalRes.TruthValue)
-                return new EvaluationResult(CommonStatusCodes.CvarValueEvaluationFailure, null, string.Format("Evaluation of variable value expression returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                return new EvaluationResult(CommonStatusCodes.CvarValueEvaluationFailure, null
+                    , string.Format(CultureInfo.InvariantCulture
+                        , "Evaluation of variable value expression returned non-zero status: {0} ({1})"
+                        , evalRes.Status, evalRes.Output));
 
             if (ssetter == null)
             {
                 if (vsetter == null)
-                    return new EvaluationResult(CommonStatusCodes.CvarUnchangeable, null, "Variable cannot be written.");
+                    return new EvaluationResult(CommonStatusCodes.CvarUnchangeable, null
+                        , "Variable cannot be written.");
 
                 if (ct == ChangeType.FromData || ct == ChangeType.FromDataOrOutput)
                 {
@@ -180,31 +182,54 @@ namespace vCommands.Variables
                     {
                         vsetter(val);
 
-                        return new EvaluationResult(CommonStatusCodes.Success, null, val.ToString(), this, value, evalRes, val);
+                        OnChanged(new VariableChangedEventArgs(sval));
+
+                        return new EvaluationResult(CommonStatusCodes.Success, null
+                            , val.ToString()
+                            , this, value, evalRes, val);
                     }
                     else if (ct == ChangeType.FromDataOrOutput)
                     {
                         vsetter((T)Convert.ChangeType(evalRes.Output, typeof(T), null));
 
-                        return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output, this, value, evalRes, val, res2);
+                        OnChanged(new VariableChangedEventArgs(sval));
+
+                        return new EvaluationResult(CommonStatusCodes.Success, null
+                            , evalRes.Output
+                            , this, value, evalRes, val, res2);
                     }
                     else
-                        return new EvaluationResult(CommonStatusCodes.CvarValueDataLacking, null, "Unable to extract data for variable value.", this, value, evalRes);
+                        return new EvaluationResult(CommonStatusCodes.CvarValueDataLacking, null
+                            , "Unable to extract data for variable value."
+                            , this, value, evalRes);
                 }
                 else if (ct == ChangeType.FromOutput)
                 {
                     vsetter((T)Convert.ChangeType(evalRes.Output, typeof(T), null));
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output, this, value, evalRes);
+                    OnChanged(new VariableChangedEventArgs(sval));
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , evalRes.Output
+                        , this, value, evalRes);
                 }
                 else
-                    return new EvaluationResult(CommonStatusCodes.CvarChangeTypeNotSupported, null, "Variable does not support falling back from output to data on change.", this, value, evalRes);
+                    return new EvaluationResult(CommonStatusCodes.CvarChangeTypeNotSupported, null
+                        , "Variable does not support falling back from output to data on change."
+                        , this, value, evalRes);
+            }
+            else if (ssetter(evalRes.Output))
+            {
+                this.OnChanged(new VariableChangedEventArgs(sval));
+
+                return new EvaluationResult(CommonStatusCodes.Success, null
+                    , evalRes.Output
+                    , this, value, evalRes);
             }
             else
-                if (ssetter(evalRes.Output))
-                    return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output, this, value, evalRes);
-                else
-                    return new EvaluationResult(CommonStatusCodes.CvarValueFormatInvalid, null, "The given value is not of the correct type.", this, value, evalRes);
+                return new EvaluationResult(CommonStatusCodes.CvarValueFormatInvalid, null
+                    , "The given value is not of the correct type."
+                    , this, value, evalRes);
         }
 
         /// <summary>
@@ -227,7 +252,9 @@ namespace vCommands.Variables
         /// <returns></returns>
         public override string ToString()
         {
-            return string.Format("[Command Delegated Variable: {0}]", Name);
+            return string.Format(CultureInfo.InvariantCulture
+                , "[Command Delegated Variable: {0}]"
+                , Name);
         }
 
         /// <summary>
@@ -249,17 +276,26 @@ namespace vCommands.Variables
         public event TypedEventHandler<IVariable, VariableChangeEventArgs> Change;
 
         /// <summary>
+        /// Raised after the value of the variable is changed successfully.
+        /// </summary>
+        public event TypedEventHandler<IVariable, VariableChangedEventArgs> Changed;
+
+        /// <summary>
         /// Raisese the <see cref="vCommands.Variables.DelegatedVariable{T}.Change"/> event.
         /// </summary>
         /// <param name="e">A <see cref="vCommands.EventArguments.VariableChangeEventArgs"/> that contains event data.</param>
         protected virtual void OnChange(VariableChangeEventArgs e)
         {
-            var ev = Change;
+            this.Change?.Invoke(this, e);
+        }
 
-            if (ev != null)
-            {
-                ev(this, e);
-            }
+        /// <summary>
+        /// Raisese the <see cref="vCommands.Variables.DelegatedVariable{T}.Changed"/> event.
+        /// </summary>
+        /// <param name="e">A <see cref="vCommands.EventArguments.VariableChangedEventArgs"/> that contains event data.</param>
+        protected virtual void OnChanged(VariableChangedEventArgs e)
+        {
+            this.Changed?.Invoke(this, e);
         }
 
         #endregion

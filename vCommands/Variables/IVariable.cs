@@ -49,6 +49,11 @@ namespace vCommands.Variables
         /// Raised before the value of the variable is changed.
         /// </summary>
         event TypedEventHandler<IVariable, VariableChangeEventArgs> Change;
+
+        /// <summary>
+        /// Raised after the value of the variable is changed successfully.
+        /// </summary>
+        event TypedEventHandler<IVariable, VariableChangedEventArgs> Changed;
     }
 
     /// <summary>

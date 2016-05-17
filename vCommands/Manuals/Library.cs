@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace vCommands.Manuals
@@ -59,13 +59,19 @@ namespace vCommands.Manuals
             foreach (var item in manuals)
             {
                 if (item.Title == null)
-                    throw new ArgumentException(string.Format("Manual at index {0} has a null title.", i));
+                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture
+                        , "Manual at index {0} has a null title."
+                        , i));
 
                 if (!item.Sealed)
-                    throw new InvalidOperationException(string.Format("Manual at index {0} must be sealed.", i));
+                    throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture
+                        , "Manual at index {0} must be sealed."
+                        , i));
 
                 if (mans.ContainsKey(item.Title))
-                    throw new ArgumentException(string.Format("Library already contains a manual with the title of that at index {0}.", i));
+                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture
+                        , "Library already contains a manual with the title of that at index {0}."
+                        , i));
 
                 mans.Add(item.Title, item);
 

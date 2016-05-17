@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Globalization;
 
 namespace vCommands.Manuals
 {
@@ -141,7 +139,10 @@ namespace vCommands.Manuals
         /// <returns>A string that represents the current keyword.</returns>
         public override string ToString()
         {
-            return string.Format("[Keyword{0} {1} | {2}]", this.Sealed ? " (SEALED):" : ":", this.word ?? "-NULL W-", this.definition == null ? "-NULL D-" : (this.definition.Length > 50 ? (this.definition.Substring(0, 47) + "...") : this.definition));
+            return string.Format(CultureInfo.InvariantCulture
+                , "[Keyword{0} {1} | {2}]"
+                , this.Sealed ? " (SEALED):" : ":", this.word ?? "-NULL W-"
+                , this.definition == null ? "-NULL D-" : (this.definition.Length > 50 ? (this.definition.Substring(0, 47) + "...") : this.definition));
         }
 
         #endregion

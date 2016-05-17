@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Globalization;
 
 namespace vCommands.Variables
 {
@@ -14,7 +12,7 @@ namespace vCommands.Variables
         /// <summary>
         /// The default abstract of a <see cref="vCommands.Variables.SynchronousVariable{T}"/>.
         /// </summary>
-        public static new string DefaultAbstract = "Synchronous value-backed command variable.";
+        public static readonly new string DefaultAbstract = "Synchronous value-backed command variable.";
 
         object locker = new object();
 
@@ -50,7 +48,9 @@ namespace vCommands.Variables
                 T temp;
 
                 if (!Setter(value, out temp))
-                    throw new FormatException(string.Format("Given data is not of the correct format. It should match a {0}.", typeof(T).Name));
+                    throw new FormatException(string.Format(CultureInfo.InvariantCulture
+                        , "Given data is not of the correct format. It should match a {0}."
+                        , typeof(T).Name));
 
                 lock (locker)
                     val = temp;
@@ -76,7 +76,9 @@ namespace vCommands.Variables
         /// <returns></returns>
         public override string ToString()
         {
-            return string.Format("[Command Synchronous Variable: {0} | {1}]", Name, val);
+            return string.Format(CultureInfo.InvariantCulture
+                , "[Command Synchronous Variable: {0} | {1}]"
+                , Name, val);
         }
 
         /// <summary>

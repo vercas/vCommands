@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Text;
+using System.Globalization;
+using System.Linq;
 
 namespace vCommands.Parsing.Expressions
 {
@@ -86,7 +86,9 @@ namespace vCommands.Parsing.Expressions
         public override string ToString()
         {
             if (string.IsNullOrWhiteSpace(Value) || Value.ToCharArray().Intersect(Parser.MustEscape).Any())
-                return string.Format("\"{0}\"", Value.Replace("\\", "\\\\").Replace("\"", "\\\""));
+                return string.Format(CultureInfo.InvariantCulture
+                    , "\"{0}\""
+                    , Value.Replace("\\", "\\\\").Replace("\"", "\\\""));
             else
                 return Value;
         }

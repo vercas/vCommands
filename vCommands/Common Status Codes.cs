@@ -64,6 +64,10 @@ namespace vCommands
         /// An argument's value is outside of the expected range.
         /// </summary>
         ArgumentOutOfRange = 3,
+        /// <summary>
+        /// An argument is supplied as the wrong type of expression.
+        /// </summary>
+        ArgumentExpressionInvalid = 4,
 
         /// <summary>
         /// A command to invoke does not exist.
@@ -115,6 +119,10 @@ namespace vCommands
         /// The invocation state is invalid.
         /// </summary>
         InvalidInvocationState = 32,
+        /// <summary>
+        /// The temporary evaluation state is invalid.
+        /// </summary>
+        InvalidCookie = 32,
 
         /// <summary>
         /// An expression in an evaluation sequence returned non-zero.

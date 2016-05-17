@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
-using System.Text;
 
 namespace vCommands.Manuals
 {
@@ -270,7 +270,12 @@ namespace vCommands.Manuals
         /// <returns>A string that represents the current section.</returns>
         public override string ToString()
         {
-            return string.Format("[Section{0} {1} ({2} subsections) | {3}]", this.Sealed ? " (SEALED):" : ":", this.title ?? "-NULL T-", this.subsro.Count, this.body == null ? "-NULL B-" : (this.body.Length > 50 ? (this.body.Substring(0, 47) + "...") : this.body));
+            return string.Format(CultureInfo.InvariantCulture
+                , "[Section{0} {1} ({2} subsections) | {3}]"
+                , this.Sealed ? " (SEALED):" : ":"
+                , this.title ?? "-NULL T-"
+                , this.subsro.Count
+                , this.body == null ? "-NULL B-" : (this.body.Length > 50 ? (this.body.Substring(0, 47) + "...") : this.body));
         }
 
         #endregion

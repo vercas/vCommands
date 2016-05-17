@@ -26,6 +26,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\vCommands.Debug.xml</DocumentationFile>
+    <CodeAnalysisRuleSet>..\..\vIRC\vIRC\Analysis.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -35,15 +36,17 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\vCommands.xml</DocumentationFile>
+    <CodeAnalysisRuleSet>..\..\vIRC\vIRC\Analysis.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>Properties\vercas_spc.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
+    <None Include="key.snk" />
     <None Include="Properties\vercas_spc.pfx" />
   </ItemGroup>
   <ItemGroup>
@@ -54,14 +57,17 @@
     <Compile Include="Default Manuals.cs" />
     <Compile Include="Evaluation Context.cs" />
     <Compile Include="Event Arguments\Contextually Cancellable Event Arguments.cs" />
-    <Compile Include="Event Arguments\Host Command Mutation.cs" />
+    <Compile Include="Event Arguments\Command Mutation.cs" />
     <Compile Include="Event Arguments\Host Variable Change.cs" />
+    <Compile Include="Event Arguments\Variable Changed.cs" />
     <Compile Include="Event Arguments\Variable Change.cs" />
     <Compile Include="Event Arguments\Host Command Invocation.cs" />
     <Compile Include="Event Arguments\Command Invocation.cs" />
+    <Compile Include="Execution State.cs" />
     <Compile Include="Host.cs" />
     <Compile Include="Evaluation Result.cs" />
     <Compile Include="Commands\Command.cs" />
+    <Compile Include="ICommandContainer.cs" />
     <Compile Include="Manuals\Drivers\Driver Collection.cs" />
     <Compile Include="Manuals\Drivers\IDriver.cs" />
     <Compile Include="Manuals\Drivers\Output Driver.cs" />
@@ -92,6 +98,7 @@
     <Compile Include="Utilities\Sealable.cs" />
     <Compile Include="Utilities\Manual Sections.cs" />
     <Compile Include="Utilities\Sorted List.cs" />
+    <Compile Include="Utilities\Strings.cs" />
     <Compile Include="Variables\IVariable.cs" />
     <Compile Include="Variables\Synchronous Variable.cs" />
     <Compile Include="Variables\Delegated Variable.cs" />

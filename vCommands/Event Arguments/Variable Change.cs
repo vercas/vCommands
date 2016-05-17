@@ -15,7 +15,7 @@ namespace vCommands.EventArguments
         : ContextuallyCancellableEventArgs
     {
         /// <summary>
-        /// Gets the current string value of the 
+        /// Gets the current string value of the variable.
         /// </summary>
         public String CurrentStringValue { get; internal set; }
 

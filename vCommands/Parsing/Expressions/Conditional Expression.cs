@@ -97,13 +97,19 @@ namespace vCommands.Parsing.Expressions
         {
             if (Condition == null)
             {
-                res = new EvaluationResult(CommonStatusCodes.ConditionalExpressionConditionMissing, this, "Missing condition expression!", this.Condition, this.TruthValue, this.PrimaryAction, this.SecondaryAction);
+                res = new EvaluationResult(CommonStatusCodes.ConditionalExpressionConditionMissing, this
+                    , "Missing condition expression!"
+                    , this.Condition, this.TruthValue, this.PrimaryAction, this.SecondaryAction);
+
                 return;
             }
 
             if (PrimaryAction == null)
             {
-                res = new EvaluationResult(CommonStatusCodes.ConditionalExpressionPrimaryActionMissing, this, "Missing primary action expression!", this.Condition, this.TruthValue, this.PrimaryAction, this.SecondaryAction);
+                res = new EvaluationResult(CommonStatusCodes.ConditionalExpressionPrimaryActionMissing, this
+                    , "Missing primary action expression!"
+                    , this.Condition, this.TruthValue, this.PrimaryAction, this.SecondaryAction);
+
                 return;
             }
 

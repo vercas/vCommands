@@ -107,12 +107,7 @@ namespace vCommands.Commands
         /// <param name="e">A <see cref="vCommands.EventArguments.CommandInvocationEventArgs"/> that contains event data.</param>
         protected virtual void OnInvocation(CommandInvocationEventArgs e)
         {
-            var ev = Invocation;
-
-            if (ev != null)
-            {
-                ev(this, e);
-            }
+            Invocation?.Invoke(this, e);
         }
 
         /// <summary>

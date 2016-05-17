@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.Text;
 
 namespace vCommands
@@ -16,7 +15,7 @@ namespace vCommands
         /// <summary>
         /// A result whic contains no output text and status zero.
         /// </summary>
-        public static EvaluationResult EmptyPositive = new EvaluationResult(CommonStatusCodes.Success, null, string.Empty);
+        public static readonly EvaluationResult EmptyPositive = new EvaluationResult(CommonStatusCodes.Success, null, string.Empty);
 
         /// <summary>
         /// Gets a new evaluation result with a successful return code and empty output.
@@ -104,17 +103,25 @@ namespace vCommands
             if (this.TruthValue != expected)
             {
                 if (expected)
-                    return new EvaluationResult(argumentNumber >= 0 ? CommonStatusCodes.ArgumentEvaluationFailure : CommonStatusCodes.CvarValueEvaluationFailure, null,
-                        argumentNumber >= 0
-                            ? string.Format("Evaluation of argument #{0} to '{1}' returned non-zero status: {2} ({3}); {4}", argumentNumber + 1, commandName, this.Status, this.CommonStatus, this.Output)
-                            : string.Format("Evaluation of value for variable '{0}' returned non-zero status: {1} ({2}); {3}", commandName, this.Status, this.CommonStatus, this.Output),
-                        commandName, argumentNumber, this);
+                    return new EvaluationResult(argumentNumber >= 0 ? CommonStatusCodes.ArgumentEvaluationFailure : CommonStatusCodes.CvarValueEvaluationFailure, this.Expression
+                        , argumentNumber >= 0
+                            ? string.Format(CultureInfo.InvariantCulture
+                                , "Evaluation of argument #{0} to '{1}' returned non-zero status: {2} ({3}); {4}"
+                                , argumentNumber + 1, commandName, this.Status, this.CommonStatus, this.Output)
+                            : string.Format(CultureInfo.InvariantCulture
+                                , "Evaluation of value for variable '{0}' returned non-zero status: {1} ({2}); {3}"
+                                , commandName, this.Status, this.CommonStatus, this.Output)
+                        , commandName, argumentNumber, this);
                 else
-                    return new EvaluationResult(argumentNumber >= 0 ? CommonStatusCodes.ArgumentEvaluationFailure : CommonStatusCodes.CvarValueEvaluationFailure, null,
-                        argumentNumber >= 0
-                            ? string.Format("Evaluation of argument #{0} to '{1}' returned zero status; {2}", argumentNumber + 1, commandName, this.Output)
-                            : string.Format("Evaluation of value for variable '{0}' returned zero status; {1}", commandName, this.Output),
-                        commandName, argumentNumber, this);
+                    return new EvaluationResult(argumentNumber >= 0 ? CommonStatusCodes.ArgumentEvaluationFailure : CommonStatusCodes.CvarValueEvaluationFailure, this.Expression
+                        , argumentNumber >= 0
+                            ? string.Format(CultureInfo.InvariantCulture
+                                , "Evaluation of argument #{0} to '{1}' returned zero status; {2}"
+                                , argumentNumber + 1, commandName, this.Output)
+                            : string.Format(CultureInfo.InvariantCulture
+                                , "Evaluation of value for variable '{0}' returned zero status; {1}"
+                                , commandName, this.Output)
+                        , commandName, argumentNumber, this);
             }
 
             return null;
@@ -137,11 +144,15 @@ namespace vCommands
                 {
                     if (found)
                     {
-                        return new EvaluationResult(CommonStatusCodes.TypedDataDuplicate, null, 
-                            argumentNumber >= 0
-                                ? string.Format("Evaluation of argument #{0} to '{1}' contains more than one datum of type {2}.", argumentNumber + 1, commandName, typeof(TData))
-                                : string.Format("Evaluation of value for variable '{0}' contains more than one datum of type {1}.", commandName, typeof(TData)), 
-                            typeof(TData), commandName, argumentNumber, this);
+                        return new EvaluationResult(CommonStatusCodes.TypedDataDuplicate, this.Expression
+                            , argumentNumber >= 0
+                                ? string.Format(CultureInfo.InvariantCulture
+                                    , "Evaluation of argument #{0} to '{1}' contains more than one datum of type {2}."
+                                    , argumentNumber + 1, commandName, typeof(TData))
+                                : string.Format(CultureInfo.InvariantCulture
+                                    , "Evaluation of value for variable '{0}' contains more than one datum of type {1}."
+                                    , commandName, typeof(TData))
+                            , typeof(TData), commandName, argumentNumber, this);
                     }
                     else
                     {
@@ -154,11 +165,15 @@ namespace vCommands
             if (found)
                 return null;
             else
-                return new EvaluationResult(CommonStatusCodes.TypedDataNotFound, null, 
-                    argumentNumber >= 0
-                        ? string.Format("Evaluation of argument #{0} to '{1}' expected to contain data of type {2}.", argumentNumber + 1, commandName, typeof(TData))
-                        : string.Format("Evaluation of value for variable '{0}' expected to contain data of type {1}.", commandName, typeof(TData)),
-                    typeof(TData), commandName, argumentNumber, this);
+                return new EvaluationResult(CommonStatusCodes.TypedDataNotFound, this.Expression
+                    , argumentNumber >= 0
+                        ? string.Format(CultureInfo.InvariantCulture
+                            , "Evaluation of argument #{0} to '{1}' expected to contain data of type {2}."
+                            , argumentNumber + 1, commandName, typeof(TData))
+                        : string.Format(CultureInfo.InvariantCulture
+                            , "Evaluation of value for variable '{0}' expected to contain data of type {1}."
+                            , commandName, typeof(TData))
+                    , typeof(TData), commandName, argumentNumber, this);
         }
 
         /// <summary>
@@ -179,11 +194,52 @@ namespace vCommands
                     return null;
                 }
 
-            return new EvaluationResult(CommonStatusCodes.TypedDataNotFound, null,
-                    argumentNumber >= 0
-                        ? string.Format("Evaluation of argument #{0} to '{1}' expected to contain data of type {2}.", argumentNumber + 1, commandName, typeof(TData))
-                        : string.Format("Evaluation of value for variable '{0}' expected to contain data of type {1}.", commandName, typeof(TData)),
-                typeof(TData), commandName, argumentNumber, this);
+            return new EvaluationResult(CommonStatusCodes.TypedDataNotFound, this.Expression
+                , argumentNumber >= 0
+                    ? string.Format(CultureInfo.InvariantCulture
+                        , "Evaluation of argument #{0} to '{1}' expected to contain data of type {2}."
+                        , argumentNumber + 1, commandName, typeof(TData))
+                    : string.Format(CultureInfo.InvariantCulture
+                        , "Evaluation of value for variable '{0}' expected to contain data of type {1}."
+                        , commandName, typeof(TData))
+                , typeof(TData), commandName, argumentNumber, this);
+        }
+
+        /// <summary>
+        /// Makes sure that the evaluation result contains only one double and returns null, otherwise attempts to parse one from the output. If that too fails, returns an appropriate error result.
+        /// </summary>
+        /// <param name="argumentNumber">The index of the argument represented by the current evaluation result.</param>
+        /// <param name="commandName">The name of the command (or variable) to which this evaluation result is an argument.</param>
+        /// <param name="res">The variable which will hold the number.</param>
+        /// <returns>Null on success; otherwise a result representing the appropriate error.</returns>
+        public EvaluationResult ExtractNumber(int argumentNumber, string commandName, ref double res)
+        {
+            if (this.ExtractUniqueDatum<double>(argumentNumber, commandName, ref res) == null)
+                return null;
+            else
+            {
+                int tmp = 0;
+
+                if (this.ExtractUniqueDatum<int>(argumentNumber, commandName, ref tmp) == null)
+                {
+                    res = tmp;
+
+                    return null;
+                }
+            }
+
+            if (double.TryParse(this.Output, out res))
+                return null;
+            else
+                return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, this.Expression
+                    , argumentNumber >= 0
+                        ? string.Format(CultureInfo.InvariantCulture
+                            , "Evaluation of argument #{0} to '{1}' expected to contain data of type Double or a valid number in the output: {2}"
+                            , argumentNumber + 1, commandName, this.Output)
+                        : string.Format(CultureInfo.InvariantCulture
+                            , "Evaluation of value for variable '{0}' expected to contain data of type Double or a valid number in the output: {1}"
+                            , commandName, this.Output)
+                    , typeof(double), commandName, argumentNumber, this, this.Output);
         }
 
         #endregion

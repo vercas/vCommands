@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
-using System.Text;
 
 namespace vCommands.Manuals
 {
@@ -416,7 +416,12 @@ namespace vCommands.Manuals
         /// <returns>A string that represents the current manual.</returns>
         public override string ToString()
         {
-            return string.Format("[Manual{0} {1} ({2} sections) | {3}]", this.Sealed ? " (SEALED):" : ":", this.title ?? "-NULL T-", this.subsro.Count, this.abstr == null ? "-NULL A-" : (this.abstr.Length > 50 ? (this.abstr.Substring(0, 47) + "...") : this.abstr));
+            return string.Format(CultureInfo.InvariantCulture
+                , "[Manual{0} {1} ({2} sections) | {3}]"
+                , this.Sealed ? " (SEALED):" : ":"
+                , this.title ?? "-NULL T-"
+                , this.subsro.Count
+                , this.abstr == null ? "-NULL A-" : (this.abstr.Length > 50 ? (this.abstr.Substring(0, 47) + "...") : this.abstr));
         }
 
         #endregion

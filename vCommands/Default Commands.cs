@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -65,9 +66,16 @@ namespace vCommands
                 CommandMethod deleg = (toggle, context, args) =>
                 {
                     if (toggle != Toggler.Neutral)
-                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null, string.Format("'{0}' does not support toggler '{1}'.", mthdName, toggle == Toggler.On ? "+" : "-"));
+                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "'{0}' does not support toggler '{1}'."
+                                , mthdName, toggle == Toggler.On ? "+" : "-"));
                     if (args.Length != 1)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, string.Format("'{0}' must receive one argument: a number.", mthdName), args);
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "'{0}' must receive one argument: a number."
+                                , mthdName)
+                            , args);
 
                     var evalRes = args[0].Evaluate(context);
 
@@ -76,12 +84,14 @@ namespace vCommands
 
                     double d = 0d;
 
-                    evalRes2 = evalRes.ExtractUniqueDatum<double>(0, mthdName, ref d);
+                    evalRes2 = evalRes.ExtractNumber(0, mthdName, ref d);
                     if (evalRes2 != null) return evalRes2;
 
                     var d2 = mthd(d);
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, d2.ToString(), d2, new double[1] { d });
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , d2.ToString(CultureInfo.InvariantCulture)
+                        , d2, new double[1] { d });
                 };
 
                 var cmd = new MethodCommand(mthdName, "Mathematics", kv.Item2, deleg);
@@ -107,9 +117,16 @@ namespace vCommands
                 CommandMethod deleg = (toggle, context, args) =>
                 {
                     if (toggle != Toggler.Neutral)
-                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null, string.Format("'{0}' does not support toggler '{1}'.", mthdName, toggle == Toggler.On ? "+" : "-"));
+                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "'{0}' does not support toggler '{1}'."
+                                , mthdName, toggle == Toggler.On ? "+" : "-"));
                     if (args.Length != 2)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, string.Format("'{0}' must receive two arguments, both numbers.", mthdName), args);
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "'{0}' must receive two arguments, both numbers."
+                                , mthdName)
+                            , args);
 
                     double d = 0d;
                     var numbers = new double[2];
@@ -120,7 +137,7 @@ namespace vCommands
 
                         var evalRes2 = evalRes.CheckTruthValue(i, mthdName, true);
                         if (evalRes2 != null) return evalRes2;
-                        evalRes2 = evalRes.ExtractUniqueDatum<double>(i, mthdName, ref d);
+                        evalRes2 = evalRes.ExtractNumber(i, mthdName, ref d);
                         if (evalRes2 != null) return evalRes2;
 
                         numbers[i] = d;
@@ -128,7 +145,9 @@ namespace vCommands
 
                     d = mthd(numbers[0], numbers[1]);
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, d.ToString(), d, numbers);
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , d.ToString(CultureInfo.InvariantCulture)
+                        , d, numbers);
                 };
 
                 var cmd = new MethodCommand(mthdName, "Mathematics", kv.Item2, deleg);
@@ -160,15 +179,24 @@ namespace vCommands
                     if (retStat)
                     {
                         if (toggle == Toggler.On)
-                            return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null, string.Format("'{0}' does not support toggler '+'.", mthdName));
+                            return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null
+                                , string.Format(CultureInfo.InvariantCulture
+                                    , "'{0}' does not support toggler '+'."
+                                    , mthdName));
                         else
                             willDoStatus = toggle != Toggler.Neutral; //  -command = will return status;
                     }
                     else if (toggle != Toggler.Neutral)
-                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null, string.Format("'{0}' does not support toggler '{1}'.", mthdName, toggle == Toggler.On ? "+" : "-"));
+                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "'{0}' does not support toggler '{1}'."
+                                , mthdName, toggle == Toggler.On ? "+" : "-"));
 
                     if (args.Length != 2)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, string.Format("'{0}' must receive two arguments, both numbers.", mthdName));
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "'{0}' must receive two arguments, both numbers."
+                                , mthdName));
 
                     double d = 0d;
                     var numbers = new double[2];
@@ -179,7 +207,7 @@ namespace vCommands
 
                         var evalRes2 = evalRes.CheckTruthValue(i, mthdName, true);
                         if (evalRes2 != null) return evalRes2;
-                        evalRes2 = evalRes.ExtractUniqueDatum<double>(i, mthdName, ref d);
+                        evalRes2 = evalRes.ExtractNumber(i, mthdName, ref d);
                         if (evalRes2 != null) return evalRes2;
 
                         numbers[i] = d;
@@ -189,11 +217,21 @@ namespace vCommands
 
                     if (willDoStatus)
                         if (res)
-                            return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("{0} {1} {2}", numbers[0], sym1, numbers[1]), numbers);
+                            return new EvaluationResult(CommonStatusCodes.Success, null
+                                , string.Format(CultureInfo.InvariantCulture
+                                    , "{0} {1} {2}"
+                                    , numbers[0], sym1, numbers[1])
+                                , numbers);
                         else
-                            return new EvaluationResult(CommonStatusCodes.MathematicalLogicFailure, null, string.Format("{0} {1} {2}", numbers[0], sym2, numbers[1]), numbers);
+                            return new EvaluationResult(CommonStatusCodes.MathematicalLogicFailure, null
+                                , string.Format(CultureInfo.InvariantCulture
+                                    , "{0} {1} {2}"
+                                    , numbers[0], sym2, numbers[1])
+                                , numbers);
                     else
-                        return new EvaluationResult(CommonStatusCodes.Success, null, res.ToString(), res, numbers);
+                        return new EvaluationResult(CommonStatusCodes.Success, null
+                            , res.ToString()
+                            , res, numbers);
                 };
 
                 var cmd = new MethodCommand(mthdName, "Comparison", kv.Item5, deleg);
@@ -221,9 +259,15 @@ namespace vCommands
                 CommandMethod deleg = (toggle, context, args) =>
                 {
                     if (toggle != Toggler.Neutral)
-                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null, string.Format("'{0}' does not support toggler '{1}'.", mthdName, toggle == Toggler.On ? "+" : "-"));
+                        return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "'{0}' does not support toggler '{1}'."
+                                , mthdName, toggle == Toggler.On ? "+" : "-"));
                     if (args.Length < 2)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, string.Format("'{0}' must receive at least two arguments, all numbers.", mthdName));
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "'{0}' must receive at least two arguments, all numbers."
+                                , mthdName));
 
                     double d = 0d;
                     var numbers = new double[args.Length];
@@ -234,7 +278,7 @@ namespace vCommands
 
                         var evalRes2 = evalRes.CheckTruthValue(i, mthdName, true);
                         if (evalRes2 != null) return evalRes2;
-                        evalRes2 = evalRes.ExtractUniqueDatum<double>(i, mthdName, ref d);
+                        evalRes2 = evalRes.ExtractNumber(i, mthdName, ref d);
                         if (evalRes2 != null) return evalRes2;
 
                         numbers[i] = d;
@@ -242,7 +286,9 @@ namespace vCommands
 
                     d = mthd(numbers);
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, d.ToString(), d, numbers);
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , d.ToString(CultureInfo.InvariantCulture)
+                        , d, numbers);
                 };
 
                 var cmd = new MethodCommand(mthdName, "Mathematics", kv.Item2, deleg);
@@ -291,6 +337,12 @@ namespace vCommands
             var ob = new StringBuilder();
             int ccnt = 0, gcnt = 0, vcnt = 0;
 
+            if (context.State != null)
+            {
+                cmds = cmds.Concat(context.State.cmds);
+                vars = vars.Concat(context.State.vars);
+            }
+
             if (args.Length > 1)
             {
                 //  For now, quit.
@@ -331,11 +383,20 @@ namespace vCommands
                 }
                 else
                 {
-                    cmds = cmds.Where(kv => regex.IsMatch(kv.Value.Abstract));
-                    vars = vars.Where(kv => regex.IsMatch(kv.Value.Abstract));
+                    if (context.Host.ShortHelp)
+                    {
+                        cmds = cmds.Where(kv => regex.IsMatch(kv.Value.Category));
 
-                    if (!context.Host.ShortHelp)
+                        if (!regex.IsMatch("Variables"))
+                            vars = new KeyValuePair<string, IVariable>[0];
+                    }
+                    else
+                    {
+                        cmds = cmds.Where(kv => regex.IsMatch(kv.Value.Abstract));
+                        vars = vars.Where(kv => regex.IsMatch(kv.Value.Abstract));
+
                         ob.Append("Looking for regular expression in command/variable descriptions: ");
+                    }
                 }
 
                 if (!context.Host.ShortHelp)
@@ -357,7 +418,9 @@ namespace vCommands
 
                     foreach (var kv in g.OrderBy(kv => kv.Key))
                     {
-                        ob.AppendFormat("{1} {0}", kv.Value.Name, first ? ":" : ",");
+                        ob.AppendFormat(CultureInfo.InvariantCulture
+                            , "{1} {0}"
+                            , kv.Value.Name, first ? ":" : ",");
 
                         ccnt++;
                         first = false;
@@ -375,7 +438,9 @@ namespace vCommands
 
                     foreach (var kv in vars.OrderBy(kv => kv.Key))
                     {
-                        ob.AppendFormat("{1} {0}", kv.Value.Name, vcnt == 0 ? ":" : ",");
+                        ob.AppendFormat(CultureInfo.InvariantCulture
+                            , "{1} {0}"
+                            , kv.Value.Name, vcnt == 0 ? ":" : ",");
                         vcnt++;
                     }
                 }
@@ -389,8 +454,9 @@ namespace vCommands
                     if ((vcnt == 0 && gcnt > 0) || vcnt > 0)
                         ob.AppendLine(".");
 
-                    ob.AppendFormat("{3} shows {0} command{4} under {1} categor{5} and {2} variable{6}."
-                        , ccnt, gcnt, vcnt > 0 ? vcnt.ToString() : "no", AssemblyName
+                    ob.AppendFormat(CultureInfo.InvariantCulture
+                        , "{3} shows {0} command{4} under {1} categor{5} and {2} variable{6}."
+                        , ccnt, gcnt, vcnt > 0 ? vcnt.ToString(CultureInfo.InvariantCulture) : "no", AssemblyName
                         , ccnt == 1 ? "" : "s", gcnt == 1 ? "y" : "ies", vcnt == 1 ? "" : "s");
                     ob.AppendLine();
                 }
@@ -400,13 +466,17 @@ namespace vCommands
                 foreach (var g in cmds.GroupBy(kv => kv.Value.Category).OrderBy(g => g.Key))
                 {
                     ob.AppendLine();
-                    ob.AppendFormat("\t{0}:", g.Key);
+                    ob.AppendFormat(CultureInfo.InvariantCulture
+                        , "\t{0}:"
+                        , g.Key);
                     ob.AppendLine();
                     ob.AppendLine();
 
                     foreach (var kv in g.OrderBy(kv => kv.Key))
                     {
-                        ob.AppendFormat("{1}\t- {2}{0}", Environment.NewLine, kv.Value.Name, kv.Value.Abstract);
+                        ob.AppendFormat(CultureInfo.InvariantCulture
+                            , "{1}\t- {2}{0}"
+                            , Environment.NewLine, kv.Value.Name, kv.Value.Abstract);
                         ccnt++;
                     }
 
@@ -421,17 +491,22 @@ namespace vCommands
 
                     foreach (var kv in vars.OrderBy(kv => kv.Key))
                     {
-                        ob.AppendFormat("{1}\t- {2}{0}", Environment.NewLine, kv.Value.Name, kv.Value.Abstract);
+                        ob.AppendFormat(CultureInfo.InvariantCulture
+                            , "{1}\t- {2}{0}"
+                            , Environment.NewLine, kv.Value.Name, kv.Value.Abstract);
                         vcnt++;
                     }
                 }
 
                 ob.AppendLine();
-                ob.AppendFormat("Shown {0} command{3} under {1} categor{4} and {2} variable{5}."
-                    , ccnt, gcnt, vcnt > 0 ? vcnt.ToString() : "no"
+                ob.AppendFormat(CultureInfo.InvariantCulture
+                    , "Shown {0} command{3} under {1} categor{4} and {2} variable{5}."
+                    , ccnt, gcnt, vcnt > 0 ? vcnt.ToString(CultureInfo.InvariantCulture) : "no"
                     , ccnt == 1 ? "" : "s", gcnt == 1 ? "y" : "ies", vcnt == 1 ? "" : "s");
                 ob.AppendLine();
-                ob.AppendFormat("Powered by {0}.", AssemblyName);
+                ob.AppendFormat(CultureInfo.InvariantCulture
+                    , "Powered by {0}."
+                    , AssemblyName);
             }
 
             return new EvaluationResult(CommonStatusCodes.Success, null, ob.ToString());
@@ -453,7 +528,7 @@ namespace vCommands
         }
 
         [MethodCommandData(Abstract = "Evaluates the given arguments sequentially until one returns non-zero status.")]
-        static EvaluationResult eval(Toggler toggle, EvaluationContext context, Expression[] args)
+        static EvaluationResult @try(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             StringBuilder ob = new StringBuilder(4096);
             EvaluationResult[] reses = new EvaluationResult[args.Length];
@@ -465,7 +540,18 @@ namespace vCommands
                 reses[i] = res;
 
                 if (i > 0)
-                    ob.Append('\t');
+                    switch (toggle)
+                    {
+                    case Toggler.On:
+                        ob.AppendLine();
+                        break;
+
+                    case Toggler.Neutral:
+                        ob.Append('\t');
+                        break;
+
+                    default: break;
+                    }
 
                 ob.Append(res.Output);
 
@@ -504,12 +590,18 @@ namespace vCommands
                         evalRes = exp.Evaluate(context);
 
                         if (!evalRes.TruthValue)
-                            return new EvaluationResult(CommonStatusCodes.LoopExpressionFailure, null, string.Format("Evaluation #{0} of the 'repeat' loop expression (argument #2) failed with non-zero status: {1} ({2}); {3}", j + 1, evalRes.Status, evalRes.CommonStatus, evalRes.Output), exp, evalRes, j, ous1, 1);
+                            return new EvaluationResult(CommonStatusCodes.LoopExpressionFailure, null
+                                , string.Format(CultureInfo.InvariantCulture
+                                    , "Evaluation #{0} of the 'repeat' loop expression (argument #2) failed with non-zero status: {1} ({2}); {3}"
+                                    , j + 1, evalRes.Status, evalRes.CommonStatus, evalRes.Output)
+                                , exp, evalRes, j, ous1, 1);
 
                         ous1[j] = evalRes.Output;
                     }
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Concat(ous1), exp, ous1, i);
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , string.Concat(ous1)
+                        , exp, ous1, i);
 
                 case Toggler.On:
                     var ous2 = new string[i];
@@ -517,13 +609,19 @@ namespace vCommands
                     for (int j = 0; j < i; j++)
                         ous2[j] = exp.Evaluate(context).Output;
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Concat(ous2), exp, ous2, i);
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , string.Concat(ous2)
+                        , exp, ous2, i);
 
                 default:    //  false
                     for (int j = 0; j < i; j++)
                         exp.Evaluate(context);
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("Given expression has been indiscriminately evaluated {0} times.", i), exp, i);
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "Given expression has been indiscriminately evaluated {0} times."
+                            , i)
+                        , exp, i);
             }
         }
 
@@ -552,7 +650,11 @@ namespace vCommands
                 evalRes2 = evalRes.ExtractUniqueDatum<int>(1 + j, "for", ref numba);
                 if (evalRes2 != null) return evalRes2;
                 if (numba < 1)  //  We will use 1-based indexes here.
-                    return new EvaluationResult(CommonStatusCodes.LoopNegativeBound, null, string.Format("Evaluation of argument #{0} to 'repeat' returned non-positive number.", j + 2), j + 1, numba, evalRes, bounds);
+                    return new EvaluationResult(CommonStatusCodes.LoopNegativeBound, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "Evaluation of argument #{0} to 'repeat' returned non-positive number."
+                            , j + 2)
+                        , j + 1, numba, evalRes, bounds);
 
                 bounds[j] = numba;
             }
@@ -591,38 +693,50 @@ namespace vCommands
 
                     for (int j = bounds[0]; backwards ? (j >= bounds[1]) : (j <= bounds[1]); j += incrementor)
                     {
-                        evalRes = exp.Evaluate(context.WithLocal(iteratorName, ConstantExpression.Fetch(j.ToString()).Evaluate(context)));
+                        evalRes = exp.Evaluate(context.WithLocal(iteratorName, ConstantExpression.Fetch(j.ToString(CultureInfo.InvariantCulture)).Evaluate(context)));
 
                         if (!evalRes.TruthValue)
-                            return new EvaluationResult(CommonStatusCodes.LoopExpressionFailure, null, string.Format("Evaluation #{0} of the 'repeat' loop expression (argument #4) failed with non-zero status: {1} ({2}); {3}", i + 1, evalRes.Status, evalRes.CommonStatus, evalRes.Output), exp, evalRes, j, ous1, 1);
+                            return new EvaluationResult(CommonStatusCodes.LoopExpressionFailure, null
+                                , string.Format(CultureInfo.InvariantCulture
+                                    , "Evaluation #{0} of the 'repeat' loop expression (argument #4) failed with non-zero status: {1} ({2}); {3}"
+                                    , i + 1, evalRes.Status, evalRes.CommonStatus, evalRes.Output)
+                                , exp, evalRes, j, ous1, 1);
                         
                         ous1.Add(evalRes.Output);
                         i++;
 
-                        System.Diagnostics.Debug.WriteLine("\tJ = {0}", j);
+                        //System.Diagnostics.Debug.WriteLine("\tJ = {0}", j);
                     }
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Concat(ous1), exp, i, ous1);
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , string.Concat(ous1)
+                        , exp, i, ous1);
 
                 case Toggler.On:
                     var ous2 = new List<string>((int)Math.Ceiling(Math.Abs((double)(bounds[1] - bounds[0]) / incrementor)));
 
                     for (int j = bounds[0]; backwards ? (j >= bounds[1]) : (j <= bounds[1]); j += incrementor)
                     {
-                        ous2.Add(exp.Evaluate(context.WithLocal(iteratorName, ConstantExpression.Fetch(j.ToString()).Evaluate(context))).Output);
+                        ous2.Add(exp.Evaluate(context.WithLocal(iteratorName, ConstantExpression.Fetch(j.ToString(CultureInfo.InvariantCulture)).Evaluate(context))).Output);
                         i++;
                     }
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Concat(ous2), exp, i, ous2);
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , string.Concat(ous2)
+                        , exp, i, ous2);
 
                 default:
                     for (int j = bounds[0]; backwards ? (j >= bounds[1]) : (j <= bounds[1]); j += incrementor)
                     {
-                        exp.Evaluate(context.WithLocal(iteratorName, ConstantExpression.Fetch(j.ToString()).Evaluate(context)));
+                        exp.Evaluate(context.WithLocal(iteratorName, ConstantExpression.Fetch(j.ToString(CultureInfo.InvariantCulture)).Evaluate(context)));
                         i++;
                     }
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("Given expression has been indiscriminately evaluated {0} times.", i), exp, i);
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "Given expression has been indiscriminately evaluated {0} times."
+                            , i)
+                        , exp, i);
             }
         }
 
@@ -633,17 +747,23 @@ namespace vCommands
             {
                 case Toggler.Neutral:
                     if (args.Length != 1)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'local' must receive one argument: a name.", args);
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , "'local' must receive one argument: a name."
+                            , args);
                     break;
 
                 case Toggler.Off:
                     if (args.Length != 1)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'-local' must receive one argument: a name.", args);
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , "'-local' must receive one argument: a name."
+                            , args);
                     break;
 
                 default:
                     if (args.Length != 2)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'+local' must receive two arguments: a name and a value.", args);
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , "'+local' must receive two arguments: a name and a value."
+                            , args);
                     break;
             }
 
@@ -660,13 +780,23 @@ namespace vCommands
                     if (context.Locals.TryGetValue(evalRes.Output, out res))
                         return res;
                     else
-                        return new EvaluationResult(CommonStatusCodes.LocalVariableNotFound, null, string.Format("No local variable named '{0}' exists in the context.", evalRes.Output), evalRes);
+                        return new EvaluationResult(CommonStatusCodes.LocalVariableNotFound, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "No local variable named '{0}' exists in the context."
+                                , evalRes.Output)
+                            , evalRes);
 
                 case Toggler.Off:
                     if (context.Locals.Remove(evalRes.Output))
-                        return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("Local variable '{0}' is removed.", evalRes.Output)); //  Operation is most likely going to be part of something more complex, but that is fixable.
+                        return new EvaluationResult(CommonStatusCodes.Success, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "Local variable '{0}' is removed.", evalRes.Output)); //  Operation is most likely going to be part of something more complex, but that is fixable.
                     else
-                        return new EvaluationResult(CommonStatusCodes.LocalVariableNotFound, null, string.Format("No local variable named '{0}' exists in the context.", evalRes.Output), evalRes);
+                        return new EvaluationResult(CommonStatusCodes.LocalVariableNotFound, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "No local variable named '{0}' exists in the context."
+                                , evalRes.Output)
+                            , evalRes);
 
                 default:
                     var name = evalRes.Output;
@@ -742,29 +872,43 @@ namespace vCommands
             var evalRes2 = evalRes.CheckTruthValue(0, "alias", true);
             if (evalRes2 != null) return evalRes2;
 
+            var container = (ICommandContainer)context.State ?? context.Host;
+
             switch (toggle)
             {
                 case Toggler.Neutral:
                     var als1 = new Alias(evalRes.Output, args[1].ToString());
 
-                    if (context.Host.RegisterCommand(als1, false, false))
+                    if (container.RegisterCommand(als1, false, false))
                         return EvaluationResult.NewEmptyPositive;
                     else
-                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "A command already exists with the given Name = {0}"
+                                , evalRes.Output)
+                            , evalRes.Output);
 
                 case Toggler.On:
                     var als2 = new Alias(evalRes.Output, args[1].ToString());
 
-                    if (context.Host.RegisterCommand(als2, true, true))
+                    if (container.RegisterCommand(als2, true, true))
                         return EvaluationResult.NewEmptyPositive;
                     else
-                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given name, and it is not an alias: {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "A command already exists with the given name, and it is not an alias: {0}"
+                                , evalRes.Output)
+                            , evalRes.Output);
 
                 default:
-                    if (context.Host.RemoveCommand(evalRes.Output))
+                    if (container.RemoveCommand(evalRes.Output))
                         return EvaluationResult.NewEmptyPositive;
                     else
-                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "A command already exists with the given Name = {0}"
+                                , evalRes.Output)
+                            , evalRes.Output);
             }
         }
 
@@ -775,17 +919,20 @@ namespace vCommands
             {
                 case Toggler.Neutral:
                     if (args.Length != 2)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'define' must receive two arguments: a name and an expression.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , "'define' must receive two arguments: a name and an expression.");
                     break;
 
                 case Toggler.On:
                     if (args.Length != 2)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'+define' must receive two arguments: a name and an expression.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , "'+define' must receive two arguments: a name and an expression.");
                     break;
 
                 default:
                     if (args.Length != 1)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'-define' must receive one argument: a name.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , "'-define' must receive one argument: a name.");
                     break;
             }
 
@@ -793,41 +940,53 @@ namespace vCommands
 
             var evalRes2 = evalRes.CheckTruthValue(0, "define", true);
             if (evalRes2 != null) return evalRes2;
-            
+
+            var container = (ICommandContainer)context.State ?? context.Host;
+
             switch (toggle)
             {
                 case Toggler.Neutral:
                     var als1 = new UserCommand(evalRes.Output, args[1]);
 
-                    if (context.Host.RegisterCommand(als1, false, false))
+                    if (container.RegisterCommand(als1, false, false))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "A command already exists with the given Name = {0}"
+                                , evalRes.Output));
 
                 case Toggler.On:
                     var als2 = new UserCommand(evalRes.Output, args[1]);
 
-                    if (context.Host.RegisterCommand(als2, true, true))
+                    if (container.RegisterCommand(als2, true, true))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "A command already exists with the given Name = {0}"
+                                , evalRes.Output));
 
                 default:
-                    if (context.Host.RemoveCommand(evalRes.Output))
+                    if (container.RemoveCommand(evalRes.Output))
                         return EvaluationResult.EmptyPositive;
                     else
-                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null, string.Format("A command already exists with the given Name = {0}", evalRes.Output));
+                        return new EvaluationResult(CommonStatusCodes.CommandAlreadyExists, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "A command already exists with the given Name = {0}"
+                                , evalRes.Output));
             }
-
         }
 
         [MethodCommandData(Abstract = "Retrieves a user argument from the evaluation context for a user-defined function.")]
         static EvaluationResult arg(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 1)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'arg' must receive one argument: an index.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'arg' must receive one argument: an index.");
             if (context.UserArguments == null)
-                return new EvaluationResult(CommonStatusCodes.UserArgumentsMissing, null, "Execution context lacks user arguments.");
+                return new EvaluationResult(CommonStatusCodes.UserArgumentsMissing, null
+                    , "Execution context lacks user arguments.");
 
             var evalRes = args[0].Evaluate(context);
 
@@ -840,9 +999,15 @@ namespace vCommands
             if (evalRes2 != null) return evalRes2;
 
             if (i < 1)  //  We will use 1-based indexes here.
-                return new EvaluationResult(CommonStatusCodes.UserArgumentIndexInvalid, null, string.Format("Argument index ({0}) must be strictly positive.", i), evalRes, i);
+                return new EvaluationResult(CommonStatusCodes.UserArgumentIndexInvalid, null
+                    , string.Format(CultureInfo.InvariantCulture
+                        , "Argument index ({0}) must be strictly positive."
+                        , i)
+                    , evalRes, i);
             if (i > context.UserArguments.Count)
-                return new EvaluationResult(CommonStatusCodes.UserArgumentNotFound, null, "There is no user argument at index #" + i, evalRes, i);
+                return new EvaluationResult(CommonStatusCodes.UserArgumentNotFound, null
+                    , "There is no user argument at index #" + i
+                    , evalRes, i);
 
             return context.UserArguments[i - 1].Evaluate(context);
         }
@@ -851,12 +1016,74 @@ namespace vCommands
         static EvaluationResult argc(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 0)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'argc' must receive no arguments.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'argc' must receive no arguments.");
             if (context.UserArguments == null)
-                return new EvaluationResult(CommonStatusCodes.UserArgumentsMissing, null, "There are no user arguments in the execution context.");
+                return new EvaluationResult(CommonStatusCodes.UserArgumentsMissing, null
+                    , "There are no user arguments in the execution context.");
 
-            return new EvaluationResult(CommonStatusCodes.Success, null, context.UserArguments.Count.ToString()
+            return new EvaluationResult(CommonStatusCodes.Success, null
+                , context.UserArguments.Count.ToString(CultureInfo.InvariantCulture)
                 , context.UserArguments.Count, (double)context.UserArguments.Count);
+        }
+
+        [MethodCommandData(Abstract = "Expands the given user-defined command or alias.")]
+        static EvaluationResult dump(Toggler toggle, EvaluationContext context, Expression[] args)
+        {
+            if (args.Length != 1)
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'dump' must receive exactly one argument: a command.");
+            
+            var cmdExp = args[0] as CommandInvocationExpression;
+
+            if (cmdExp == null)
+                return new EvaluationResult(CommonStatusCodes.ArgumentExpressionInvalid, null
+                    , "First argument should be a command (in a compound argument).");
+
+            var cmdName = cmdExp.CommandName;
+
+            Command cmd = null;
+
+            if (cmd == null)
+                cmd = context.State.GetCommand(cmdName);
+
+            if (cmd == null)
+                cmd = context.Host.GetCommand(cmdName);
+
+            if (cmd == null)
+                return new EvaluationResult(CommonStatusCodes.CommandNotFound, cmdExp
+                    , string.Format(CultureInfo.InvariantCulture
+                        , "Command '{0}' is not defined."
+                        , cmdName)
+                    , cmdName, cmdExp);
+
+            if (!(cmd is Alias) && !(cmd is UserCommand))
+                return new EvaluationResult(CommonStatusCodes.CommandNotFound, cmdExp
+                    , string.Format(CultureInfo.InvariantCulture
+                        , "Command '{0}' is not an alias or user-defined."
+                        , cmdName)
+                    , cmdName, cmdExp);
+
+            string innerExp = (cmd is Alias) ? ((Alias)cmd).Expression : ((UserCommand)cmd).Expression.ToString();
+
+            switch (toggle)
+            {
+            case Toggler.Neutral:
+                return new EvaluationResult(CommonStatusCodes.Success, null
+                    , string.Format(CultureInfo.InvariantCulture
+                        , "{0}: {1}"
+                        , (cmd is Alias) ? "Alias" : "Command", innerExp)
+                    , innerExp);
+
+            case Toggler.On:
+                return new EvaluationResult(CommonStatusCodes.TogglerNotSupported, null
+                    , "Toggler '+' not supported.", toggle);
+
+            default:
+                return new EvaluationResult(CommonStatusCodes.Success, null
+                    , innerExp
+                    , innerExp);
+            }
         }
 
         #endregion
@@ -983,7 +1210,9 @@ namespace vCommands
             {
                 case 0:
                     var r1 = rnd.NextDouble();
-                    return new EvaluationResult(CommonStatusCodes.Success, null, r1.ToString(), r1);
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , r1.ToString(CultureInfo.InvariantCulture)
+                        , r1, (double)r1);
 
                 case 1:
                     int i = -1;
@@ -991,13 +1220,22 @@ namespace vCommands
                     evalRes = args[0].Evaluate(context);
                     evalRes2 = evalRes.CheckTruthValue(0, "rand", true);
                     if (evalRes2 != null) return evalRes2;
-                    evalRes2 = evalRes.ExtractUniqueDatum<int>(0, "rand", ref i);
+                    evalRes2 = evalRes.ExtractUniqueDatum(0, "rand", ref i);
                     if (evalRes2 != null) return evalRes2;
 
-                    if (int.TryParse(evalRes.Output, out i))
-                        return new EvaluationResult(CommonStatusCodes.Success, null, rnd.Next(i).ToString());
-                    else
-                        return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Failed to convert output of argument #{0} to an unsigned integer: {1}", i + 1, evalRes.Output));
+                if (int.TryParse(evalRes.Output, out i))
+                {
+                    var r2 = rnd.Next(i);
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , r2.ToString(CultureInfo.InvariantCulture)
+                        , r2, (double)r2);
+                }
+                else
+                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "Failed to convert output of argument #{0} to an unsigned integer: {1}"
+                            , i + 1, evalRes.Output));
 
                 case 2:
                     var bounds = new int[2];
@@ -1007,258 +1245,333 @@ namespace vCommands
                         evalRes = args[j].Evaluate(context);
 
                         if (!evalRes.TruthValue)
-                            return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", j + 1, evalRes.Status, evalRes.Output));
+                            return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null
+                                , string.Format(CultureInfo.InvariantCulture
+                                    , "Evaluation of argument #{0} returned non-zero status: {1} ({2})"
+                                    , j + 1, evalRes.Status, evalRes.Output));
 
                         int b;
 
                         if (int.TryParse(evalRes.Output, out b))
                             bounds[j] = b;
                         else
-                            return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Failed to convert output of argument #{0} to an unsigned integer: {1}", j + 1, evalRes.Output));
+                            return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null
+                                , string.Format(CultureInfo.InvariantCulture
+                                    , "Failed to convert output of argument #{0} to an unsigned integer: {1}"
+                                    , j + 1, evalRes.Output));
                     }
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, rnd.Next(bounds[0], bounds[1]).ToString());
+                var r3 = rnd.Next(bounds[0], bounds[1]);
+
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , r3.ToString(CultureInfo.InvariantCulture)
+                        , r3, (double)r3);
 
                 default:
-                    return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Too many arguments given to 'rand'.");
+                    return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                        , "Too many arguments given to 'rand'.");
             }
         }
 
         [MethodCommandData(Category = "Mathematics", Abstract = "Adds the given arguments together, converting input to numbers.")]
         static EvaluationResult add(Toggler toggle, EvaluationContext context, Expression[] args)
         {
-            decimal res = 0m;
+            double res = 0d;
 
             if (args.Length < 2)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide at least two arguments to 'add'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'add' must receive at least two arguments.");
 
             for (int i = 0; i < args.Length; i++)
             {
                 var evalRes = args[i].Evaluate(context);
 
-                if (evalRes.Status != 0)
-                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                var evalRes2 = evalRes.CheckTruthValue(i, "add");
+                if (evalRes2 != null) return evalRes2;
+                
+                double d = 0d;
 
-                decimal d;
+                evalRes2 = evalRes.ExtractNumber(i, "add", ref d);
+                if (evalRes2 != null) return evalRes2;
 
-                if (decimal.TryParse(evalRes.Output, out d))
-                    res += d;
-                else
-                    return new EvaluationResult(3, null, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
+                res += d;
             }
 
-            return new EvaluationResult(CommonStatusCodes.Success, null, res.ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null
+                , res.ToString(CultureInfo.InvariantCulture)
+                , res);
         }
 
         [MethodCommandData(Category = "Mathematics", Abstract = "Subtracts from the first argument the values of the other arguments, converting input to numbers.")]
         static EvaluationResult sub(Toggler toggle, EvaluationContext context, Expression[] args)
         {
-            decimal res = 0m;
+            double res = 0d;
 
             if (args.Length < 2)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide at least two arguments to 'sub'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'sub' must receive at least two arguments.");
 
             for (int i = 0; i < args.Length; i++)
             {
                 var evalRes = args[i].Evaluate(context);
 
-                if (evalRes.Status != 0)
-                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                var evalRes2 = evalRes.CheckTruthValue(i, "sub");
+                if (evalRes2 != null) return evalRes2;
 
-                decimal d;
+                double d = 0d;
 
-                if (decimal.TryParse(evalRes.Output, out d))
-                {
-                    if (i == 0)
-                        res = d;
-                    else
-                        res -= d;
-                }
+                evalRes2 = evalRes.ExtractNumber(i, "sub", ref d);
+                if (evalRes2 != null) return evalRes2;
+                
+                if (i == 0)
+                    res = d;
                 else
-                    return new EvaluationResult(3, null, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
+                    res -= d;
             }
 
-            return new EvaluationResult(CommonStatusCodes.Success, null, res.ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null
+                , res.ToString(CultureInfo.InvariantCulture)
+                , res);
         }
 
         [MethodCommandData(Category = "Mathematics", Abstract = "Multiplies the given arguments together, converting input to numbers.")]
         static EvaluationResult mul(Toggler toggle, EvaluationContext context, Expression[] args)
         {
-            decimal res = 1m;
+            double res = 1d;
 
             if (args.Length < 2)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide at least two arguments to 'mul'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'mul' must receive at least two arguments.");
 
             for (int i = 0; i < args.Length; i++)
             {
                 var evalRes = args[i].Evaluate(context);
 
-                if (evalRes.Status != 0)
-                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                var evalRes2 = evalRes.CheckTruthValue(i, "mul");
+                if (evalRes2 != null) return evalRes2;
 
-                decimal d;
+                double d = 0d;
 
-                if (decimal.TryParse(evalRes.Output, out d))
-                    res *= d;
-                else
-                    return new EvaluationResult(3, null, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
+                evalRes2 = evalRes.ExtractNumber(i, "mul", ref d);
+                if (evalRes2 != null) return evalRes2;
+
+                res *= d;
             }
 
-            return new EvaluationResult(CommonStatusCodes.Success, null, res.ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null
+                , res.ToString(CultureInfo.InvariantCulture)
+                , res);
         }
 
         [MethodCommandData(Category = "Mathematics", Abstract = "Divides the first argument by the values of the other arguments, converting input to numbers.")]
         static EvaluationResult div(Toggler toggle, EvaluationContext context, Expression[] args)
         {
-            decimal res = 1m;
+            double res = 1d;
 
             if (args.Length < 2)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide at least two arguments to 'div'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'div' must receive at least two arguments.");
 
             for (int i = 0; i < args.Length; i++)
             {
                 var evalRes = args[i].Evaluate(context);
 
-                if (evalRes.Status != 0)
-                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                var evalRes2 = evalRes.CheckTruthValue(i, "sub");
+                if (evalRes2 != null) return evalRes2;
 
-                decimal d;
+                double d = 0d;
 
-                if (decimal.TryParse(evalRes.Output, out d))
-                {
-                    if (i == 0)
-                        res = d;
-                    else
-                        res /= d;
-                }
+                evalRes2 = evalRes.ExtractNumber(i, "sub", ref d);
+                if (evalRes2 != null) return evalRes2;
+                
+                if (i == 0)
+                    res = d;
                 else
-                    return new EvaluationResult(3, null, string.Format("Failed to convert output of argument #{0} to a number: {1}", i + 1, evalRes.Output));
+                    res /= d;
             }
 
-            return new EvaluationResult(CommonStatusCodes.Success, null, res.ToString());
+            return new EvaluationResult(CommonStatusCodes.Success, null
+                , res.ToString(CultureInfo.InvariantCulture)
+                , res);
         }
 
-        [MethodCommandData(Category = "Mathematics", Abstract = "Outputs the rounded value of the given input number..")]
+        [MethodCommandData(Category = "Mathematics", Abstract = "Outputs the rounded value of the given input number.")]
         static EvaluationResult round(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 1 && args.Length != 2)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'floor' must receive one or two argument, both numbers.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'round' must receive one or two arguments, both numbers.");
 
             var evalRes = args[0].Evaluate(context);
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+            var evalRes2 = evalRes.CheckTruthValue(0, "round");
+            if (evalRes2 != null) return evalRes2;
 
+            double d = 0d;
+
+            evalRes2 = evalRes2.ExtractNumber(0, "round", ref d);
+            if (evalRes2 != null) return evalRes2;
+            
             int digits = 0;
 
             if (args.Length > 1)
             {
                 evalRes = args[1].Evaluate(context);
 
-                if (!evalRes.TruthValue)
-                    return new EvaluationResult(3, null, string.Format("Evaluation of argument #2 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+                evalRes2 = evalRes.CheckTruthValue(1, "round");
+                if (evalRes2 != null) return evalRes2;
 
-                if (!int.TryParse(evalRes.Output, out digits))
-                    return new EvaluationResult(4, null, "The given second argument is not a number.");
-                if (digits < 0 || digits > 28)
-                    return new EvaluationResult(5, null, "The number of digits (second argument) must be between 0 and 28 inclusively.");
+                if (evalRes.ExtractUniqueDatum(1, "round", ref digits) != null)
+                {
+                    //  Non-null means there's no integer there. Parsing is attempted in this case.
+
+                    if (!int.TryParse(evalRes.Output, out digits))
+                        return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, evalRes.Expression
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "Evaluation of argument #2 to 'round' expected to contain data of type Int32 or a valid integer in the output: {0}"
+                                , evalRes.Output));
+                }
+
+                if (digits < 0 || digits > 15)
+                    return new EvaluationResult(CommonStatusCodes.ArgumentOutOfRange, evalRes.Expression
+                        , "Argument #2 to 'round' (number of digits) must be between 0 and 15 inclusively.");
             }
 
-            decimal d;
-
-            if (!decimal.TryParse(evalRes.Output, out d))
-                return new EvaluationResult(6, null, "The given first argument is not a number.");
-
-            return new EvaluationResult(CommonStatusCodes.Success, null, Math.Round(d, digits).ToString());
+            d = Math.Round(d, digits);
+            
+            return new EvaluationResult(CommonStatusCodes.Success, null
+                , d.ToString(CultureInfo.InvariantCulture)
+                , d);
         }
 
         [MethodCommandData(Category = "Comparison", Abstract = "Determines whether all given arguments are equal.")]
         static EvaluationResult eq(Toggler toggle, EvaluationContext context, Expression[] args)
         {
-            bool restrictive = toggle != Toggler.Off;
+            bool restrictive = true;
 
             if (args.Length < 2)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide at least two arguments to 'eq'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'eq' must receive at least two arguments.");
 
             switch (toggle)
             {
-                case Toggler.Neutral:
-                case Toggler.On:
-                    string cur = null;
+            case Toggler.Neutral:
+                restrictive = false;
+                goto case Toggler.On;
 
-                    for (int i = 0; i < args.Length; i++)
+            case Toggler.On:
+                string cur = null;
+
+                for (int i = 0; i < args.Length; i++)
+                {
+                    var evalRes = args[i].Evaluate(context);
+
+                    if (restrictive)
                     {
-                        var evalRes = args[i].Evaluate(context);
-
-                        if (restrictive && evalRes.Status != 0)
-                            return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
-
-                        if (cur == null)
-                            cur = evalRes.Output;
-                        else
-                            if (cur != evalRes.Output)
-                                return new EvaluationResult(3, null, string.Format("Argument #{0}'s output is not equal to its predecessors'.", i + 1));
+                        var evalRes2 = evalRes.CheckTruthValue(i, "eq");
+                        if (evalRes2 != null) return evalRes2;
                     }
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, cur);
+                    if (cur == null)
+                        cur = evalRes.Output;
+                    else
+                        if (cur != evalRes.Output)
+                        return new EvaluationResult(-1000, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "Argument #{0}'s output is not equal to its predecessors'."
+                                , i + 1)
+                            , false);
+                }
 
-                default:
-                    bool? st = null;
+                return new EvaluationResult(CommonStatusCodes.Success, null
+                    , cur
+                    , true);
 
-                    for (int i = 0; i < args.Length; i++)
-                    {
-                        var evalRes = args[i].Evaluate(context);
+            default:
+                bool? st = null;
 
-                        if (st == null)
-                            st = evalRes.TruthValue;
-                        else
-                            if (st != evalRes.TruthValue)
-                                return new EvaluationResult(4, null, string.Format("Argument #{0}'s truth value is not equal to its predecessors'.", i + 1));
-                    }
+                for (int i = 0; i < args.Length; i++)
+                {
+                    var evalRes = args[i].Evaluate(context);
 
-                    return new EvaluationResult(CommonStatusCodes.Success, null, "All arguments have identical truth value");
+                    if (st == null)
+                        st = evalRes.TruthValue;
+                    else if (st != evalRes.TruthValue)
+                        return new EvaluationResult(-1001, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "Argument #{0}'s truth value is not equal to its predecessors'."
+                                , i + 1)
+                            , false);
+                }
+
+                return new EvaluationResult(CommonStatusCodes.Success, null
+                    , "All arguments have identical truth value."
+                    , true);
             }
         }
 
         [MethodCommandData(Category = "Comparison", Abstract = "Determines whether the two given arguments are equal.")]
         static EvaluationResult neq(Toggler toggle, EvaluationContext context, Expression[] args)
         {
-            bool restrictive = toggle != Toggler.Off;
+            bool restrictive = true;
 
             if (args.Length != 2)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "Please provide two arguments to 'neq'.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'neq' must receive exactly two arguments.");
 
             switch (toggle)
             {
-                case Toggler.Neutral:
-                case Toggler.On:
-                    string[] ou = new string[2];
+            case Toggler.Neutral:
+                restrictive = false;
+                goto case Toggler.On;
 
-                    for (int i = 0; i < 2; i++)
+            case Toggler.On:
+                string[] ou = new string[2];
+
+                for (int i = 0; i < 2; i++)
+                {
+                    var evalRes = args[i].Evaluate(context);
+
+                    if (restrictive)
                     {
-                        var evalRes = args[i].Evaluate(context);
-
-                        if (restrictive && evalRes.Status != 0)
-                            return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
-
-                        ou[i] = args[i].Evaluate(context).Output;
+                        var evalRes2 = evalRes.CheckTruthValue(i, "neq");
+                        if (evalRes2 != null) return evalRes2;
                     }
 
-                    if (ou[0] == ou[1])
-                        return new EvaluationResult(4, null, string.Format("{0} = {1}", ou[0], ou[1]));
-                    else
-                        return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("{0} ≠ {1}", ou[0], ou[1]));
+                    ou[i] = evalRes.Output;
+                }
 
-                default:
-                    bool[] st = new bool[2];
+                if (ou[0] == ou[1])
+                    return new EvaluationResult(-1002, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "{0} = {1}"
+                            , ou[0], ou[1])
+                        , ou[0], ou[1]);
+                else
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "\"{0}\" ≠ \"{1}\""
+                            , ou[0], ou[1])
+                        , ou[0], ou[1]);
 
-                    for (int i = 0; i < 2; i++)
-                        st[i] = args[i].Evaluate(context).TruthValue;
+            default:
+                bool[] st = new bool[2];
 
-                    if (st[0] == st[1])
-                        return new EvaluationResult(4, null, string.Format("{0} = {1}", st[0], st[1]));
-                    else
-                        return new EvaluationResult(CommonStatusCodes.Success, null, string.Format("{0} ≠ {1}", st[0], st[1]));
+                for (int i = 0; i < 2; i++)
+                    st[i] = args[i].Evaluate(context).TruthValue;
+
+                if (st[0] == st[1])
+                    return new EvaluationResult(-1003, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "{0} = {1}"
+                            , st[0], st[1])
+                        , st[0], st[1]);
+                else
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "{0} ≠ {1}"
+                            , st[0], st[1])
+                        , st[0], st[1]);
             }
         }
 
@@ -1270,9 +1583,10 @@ namespace vCommands
         static EvaluationResult subs(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length != 3)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'subs' must receive 3 arguments: start index, length and a string.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'subs' must receive 3 arguments: start index, length and a string.");
 
-            EvaluationResult evalRes;
+            EvaluationResult evalRes, evalRes2;
 
             var bounds = new int[2];
 
@@ -1280,43 +1594,129 @@ namespace vCommands
             {
                 evalRes = args[j].Evaluate(context);
 
-                if (!evalRes.TruthValue)
-                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", j + 1, evalRes.Status, evalRes.Output));
+                evalRes2 = evalRes.CheckTruthValue(j, "subs");
+                if (evalRes2 != null) return evalRes2;
 
-                int numba;
+                int numba = -1;
 
-                if (!int.TryParse(evalRes.Output, out numba))
-                    return new EvaluationResult(3, null, "The given argument is not an integer.");
-                if (numba < 0)  //  We will use 1-based indexes here.
-                    return new EvaluationResult(4, null, "The given argument must be greater than or equal to 0 (zero).");
+                if (evalRes.ExtractUniqueDatum(j, "subs", ref numba) != null)
+                {
+                    //  Non-null means there's no integer there. Parsing is attempted in this case.
+
+                    if (!int.TryParse(evalRes.Output, out numba))
+                        return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, evalRes.Expression
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "Evaluation of argument #{0} to 'subs' expected to contain data of type Int32 or a valid integer in the output: {1}"
+                                , j + 1, evalRes.Output));
+                }
+
+                if (numba < 0)
+                    return new EvaluationResult(CommonStatusCodes.ArgumentOutOfRange, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "Argument #{0} to 'subs' ({1}) must not be negative."
+                                , j + 1, evalRes.Output));
 
                 bounds[j] = numba;
             }
 
             evalRes = args[2].Evaluate(context);
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(5, null, string.Format("Evaluation of argument #3 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+            evalRes2 = evalRes.CheckTruthValue(2, "subs");
+            if (evalRes2 != null) return evalRes2;
 
             if (bounds[0] > evalRes.Output.Length)
-                return new EvaluationResult(6, null, string.Format("Start index is {0}, but string only contains {1} characters.", bounds[0], evalRes.Output.Length));
+                return new EvaluationResult(CommonStatusCodes.ArgumentOutOfRange, null
+                    , string.Format(CultureInfo.InvariantCulture
+                        , "Start index is {0}, but string only contains {1} characters."
+                        , bounds[0], evalRes.Output.Length));
 
             if (bounds[0] + bounds[1] > evalRes.Output.Length)
-                return new EvaluationResult(7, null, string.Format("Resulted end index is {0}, but string only contains {1} characters.", bounds[0] + bounds[1], evalRes.Output.Length));
+                return new EvaluationResult(CommonStatusCodes.ArgumentOutOfRange, null
+                    , string.Format(CultureInfo.InvariantCulture
+                        , "Resulted end index is {0}, but string only contains {1} characters."
+                        , bounds[0] + bounds[1], evalRes.Output.Length));
 
-            return new EvaluationResult(CommonStatusCodes.Success, null, evalRes.Output.Substring(bounds[0], bounds[1]));
+            return new EvaluationResult(CommonStatusCodes.Success, null
+                , evalRes.Output.Substring(bounds[0], bounds[1]));
+        }
+
+        [MethodCommandData(Abstract = "Extracts specified range of lines from a string.")]
+        static EvaluationResult pick(Toggler toggle, EvaluationContext context, Expression[] args)
+        {
+            if (args.Length != 3)
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'pick' must receive 3 arguments: start line, line count and a string.");
+
+            EvaluationResult evalRes, evalRes2;
+
+            var bounds = new int[2];
+
+            for (int j = 0; j < 2; j++)
+            {
+                evalRes = args[j].Evaluate(context);
+
+                evalRes2 = evalRes.CheckTruthValue(j, "pick");
+                if (evalRes2 != null) return evalRes2;
+
+                int numba = -1;
+
+                if (evalRes.ExtractUniqueDatum(j, "pick", ref numba) != null)
+                {
+                    //  Non-null means there's no integer there. Parsing is attempted in this case.
+
+                    if (!int.TryParse(evalRes.Output, out numba))
+                        return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, evalRes.Expression
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "Evaluation of argument #{0} to 'pick' expected to contain data of type Int32 or a valid integer in the output: {1}"
+                                , j + 1, evalRes.Output));
+                }
+
+                if (numba < 0)
+                    return new EvaluationResult(CommonStatusCodes.ArgumentOutOfRange, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "Argument #{0} to 'pick' ({1}) must not be negative."
+                                , j + 1, evalRes.Output));
+
+                bounds[j] = numba;
+            }
+
+            evalRes = args[2].Evaluate(context);
+
+            evalRes2 = evalRes.CheckTruthValue(2, "pick");
+            if (evalRes2 != null) return evalRes2;
+
+            var lines = evalRes.Output.GetLines().ToList();
+
+            if (toggle != Toggler.On)
+            {
+                if (bounds[0] > lines.Count)
+                    return new EvaluationResult(CommonStatusCodes.ArgumentOutOfRange, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "Start index is {0}, but string only contains {1} lines."
+                            , bounds[0], lines.Count));
+
+                if (bounds[0] + bounds[1] > lines.Count)
+                    return new EvaluationResult(CommonStatusCodes.ArgumentOutOfRange, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "Resulted end index is {0}, but string only contains {1} lines."
+                            , bounds[0] + bounds[1], lines.Count));
+            }
+
+            return new EvaluationResult(CommonStatusCodes.Success, null
+                , string.Join(Environment.NewLine, lines.Skip(bounds[0]).Take(bounds[1])));
         }
 
         [MethodCommandData(Abstract = "Formats the given first argument with the other arguments.")]
         static EvaluationResult format(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length < 1)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'format' must be given at least one argument: a format string.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'format' must be given at least one argument: a format string.");
 
             var evalRes = args[0].Evaluate(context);
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+            var evalRes2 = evalRes.CheckTruthValue(0, "format");
+            if (evalRes2 != null) return evalRes2;
 
             var format = evalRes.Output;
 
@@ -1326,19 +1726,22 @@ namespace vCommands
             {
                 evalRes = args[i].Evaluate(context);
 
-                if (!evalRes.TruthValue)
-                    return new EvaluationResult(3, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                evalRes2 = evalRes.CheckTruthValue(i, "format");
+                if (evalRes2 != null) return evalRes2;
 
                 frmargs[i - 1] = evalRes.Output;
             }
 
             try
             {
-                format = string.Format(format, frmargs);
+                format = string.Format(CultureInfo.InvariantCulture, format, frmargs);
             }
             catch (FormatException x)
             {
-                return new EvaluationResult(4, null, string.Format("There is an issue with the format string: {0}", x.Message));
+                return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null
+                    , string.Format(CultureInfo.InvariantCulture
+                        , "There is an issue with the format string: {0}"
+                        , x.Message));
             }
 
             return new EvaluationResult(CommonStatusCodes.Success, null, format);
@@ -1355,34 +1758,43 @@ namespace vCommands
             {
                 case Toggler.Neutral:
                     if (args.Length != 1)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'cvar' must receive one argument: a name.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , "'cvar' must receive one argument: a name.");
                     break;
 
                 case Toggler.Off:
                     if (args.Length != 2)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'-cvar' must receive two arguments: a name and a value.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , "'-cvar' must receive two arguments: a name and a value.");
                     break;
 
                 default:
                     if (args.Length != 2)
-                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'+cvar' must receive two arguments: a name and a value.");
+                        return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                            , "'+cvar' must receive two arguments: a name and a value.");
                     break;
             }
 
             var evalRes = args[0].Evaluate(context);
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
-
-            var variable = context.Host.GetVariable(evalRes.Output);
+            var evalRes2 = evalRes.CheckTruthValue(0, "cvar");
+            if (evalRes2 != null) return evalRes2;
+            
+            var variable = context.State?.GetVariable(evalRes.Output);
 
             if (variable == null)
-                return new EvaluationResult(CommonStatusCodes.CvarNotFound, null, "There is no command variable with the specified name.");
+                variable = context.Host.GetVariable(evalRes.Output);
+
+            if (variable == null)
+                return new EvaluationResult(CommonStatusCodes.CvarNotFound, null
+                    , "There is no command variable with the specified name.");
 
             switch (toggle)
             {
                 case Toggler.Neutral:
-                    return new EvaluationResult(CommonStatusCodes.Success, null, variable.StringValue, variable);
+                    return new EvaluationResult(CommonStatusCodes.Success, null
+                        , variable.StringValue
+                        , variable);
 
                 case Toggler.Off:
                     return variable.ChangeValue(context, args[1], ChangeType.FromDataOrOutput);
@@ -1398,12 +1810,13 @@ namespace vCommands
         static EvaluationResult man(Toggler toggle, EvaluationContext context, Expression[] args)
         {
             if (args.Length < 1)
-                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null, "'man' must receive at least one argument: a regex or name and additional flags.");
+                return new EvaluationResult(CommonStatusCodes.InvalidArgumentCount, null
+                    , "'man' must receive at least one argument: a regex or name and additional flags.");
 
             var evalRes = args[0].Evaluate(context);
 
-            if (!evalRes.TruthValue)
-                return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #1 returned non-zero status: {0} ({1})", evalRes.Status, evalRes.Output));
+            var evalRes2 = evalRes.CheckTruthValue(0, "man");
+            if (evalRes2 != null) return evalRes2;
 
             var rgx = new Regex(evalRes.Output);
 
@@ -1418,8 +1831,8 @@ namespace vCommands
             {
                 evalRes = args[i].Evaluate(context);
 
-                if (!evalRes.TruthValue)
-                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                evalRes2 = evalRes.CheckTruthValue(i, "man");
+                if (evalRes2 != null) return evalRes2;
 
                 switch (evalRes.Output)
                 {
@@ -1444,32 +1857,47 @@ namespace vCommands
                     //  Display information
 
                     case "jt":
-                        if (displayLocation != 0) return new EvaluationResult(4, null, string.Format("A display location was already specified before argument #{0}", i + 1));
+                        if (displayLocation != 0) return new EvaluationResult(4, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "A display location was already specified before argument #{0}"
+                                , i + 1));
                         displayLocation = 1;
                         break;
 
                     case "ja":
-                        if (displayLocation != 0) return new EvaluationResult(4, null, string.Format("A display location was already specified before argument #{0}", i + 1));
+                        if (displayLocation != 0) return new EvaluationResult(4, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "A display location was already specified before argument #{0}"
+                                , i + 1));
                         displayLocation = 2;
                         break;
 
                     case "ji":
-                        if (displayLocation != 0) return new EvaluationResult(4, null, string.Format("A display location was already specified before argument #{0}", i + 1));
+                        if (displayLocation != 0) return new EvaluationResult(4, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "A display location was already specified before argument #{0}"
+                                , i + 1));
                         displayLocation = 3;
                         break;
 
                     default:
                         var str = evalRes.Output;
 
-                        if (str.StartsWith("driver="))
+                        if (str.StartsWith("driver=", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (displayLocation != 0) return new EvaluationResult(4, null, string.Format("A display location was already specified before argument #{0}", i + 1));
+                            if (displayLocation != 0) return new EvaluationResult(4, null
+                                , string.Format(CultureInfo.InvariantCulture
+                                    , "A display location was already specified before argument #{0}"
+                                    , i + 1));
                             displayLocation = -1;
 
                             var drvn = str.Substring(7);
 
                             if (drvn.Length == 0)
-                                return new EvaluationResult(13, null, string.Format("Something must follow \"driver=\" at argument #{0}.", i + 1));
+                                return new EvaluationResult(13, null
+                                    , string.Format(CultureInfo.InvariantCulture
+                                        , "Something must follow \"driver=\" at argument #{0}."
+                                        , i + 1));
 
                             drv = context.Host.ManualDrivers[drvn];
 
@@ -1482,7 +1910,8 @@ namespace vCommands
                                 switch (drvs.Length)
                                 {
                                     case 0:
-                                        return new EvaluationResult(11, null, "No driver found matching the given mask.");
+                                        return new EvaluationResult(11, null
+                                            , "No driver found matching the given mask.");
 
                                     case 1:
                                         drv = drvs[0];
@@ -1491,7 +1920,8 @@ namespace vCommands
                                     case 2:
                                         var sb = new StringBuilder();
 
-                                        sb.AppendFormat("Found {0} drivers matching given mask:");
+                                        sb.AppendFormat(CultureInfo.InvariantCulture
+                                            , "Found {0} drivers matching given mask:");
 
                                         for (int j = 0; j < drvs.Length; j++)
                                         {
@@ -1506,15 +1936,23 @@ namespace vCommands
                                 }
                             }
                         }
-                        else if (str.StartsWith("section="))
+                        else if (str.StartsWith("section=", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (displayLocation != 0) return new EvaluationResult(4, null, string.Format("A display location was already specified before argument #{0}", i + 1));
+                            if (displayLocation != 0)
+                                return new EvaluationResult(4, null
+                                    , string.Format(CultureInfo.InvariantCulture
+                                        , "A display location was already specified before argument #{0}"
+                                        , i + 1));
+
                             displayLocation = 4;
 
                             var scss = str.Substring(8);
 
                             if (scss.Length == 0)
-                                return new EvaluationResult(30, null, string.Format("Something must follow \"section=\" at argument #{0}", i + 1));
+                                return new EvaluationResult(30, null
+                                    , string.Format(CultureInfo.InvariantCulture
+                                        , "Something must follow \"section=\" at argument #{0}"
+                                        , i + 1));
 
                             var scsp = scss.Split('.');
                             scsi = new int[scsp.Length];
@@ -1524,10 +1962,16 @@ namespace vCommands
                                 int tmp = -1;
 
                                 if (!int.TryParse(scsp[j], out tmp))
-                                    return new EvaluationResult(31, null, string.Format("Section #{0} in argument #{1} is not an integer.", j + 1, i + 1));
+                                    return new EvaluationResult(31, null
+                                        , string.Format(CultureInfo.InvariantCulture
+                                            , "Section #{0} in argument #{1} is not an integer."
+                                            , j + 1, i + 1));
 
                                 if (tmp < 1)
-                                    return new EvaluationResult(32, null, string.Format("Section #{0} in argument #{1} must be strictly positive.", j + 1, i + 1));
+                                    return new EvaluationResult(32, null
+                                        , string.Format(CultureInfo.InvariantCulture
+                                            , "Section #{0} in argument #{1} must be strictly positive."
+                                            , j + 1, i + 1));
 
                                 scsi[j] = tmp - 1;  //  The command takes 1-based indexes; the inner representation is 0-based.
                             }
@@ -1563,7 +2007,9 @@ namespace vCommands
                     default:
                         var sb = new StringBuilder();
 
-                        sb.AppendFormat("Found {0} manuals matching given mask:", mans.Length);
+                        sb.AppendFormat(CultureInfo.InvariantCulture
+                            , "Found {0} manuals matching given mask:"
+                            , mans.Length);
 
                         for (int i = 0; i < mans.Length; i++)
                         {
@@ -1599,13 +2045,16 @@ namespace vCommands
                     var sc = man[scsi];
 
                     if (sc == null)
-                        return new EvaluationResult(33, null, string.Format("Could not find the specified section in the manual."));
+                        return new EvaluationResult(33, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "Could not find the specified section in the manual."));
 
                     return new EvaluationResult(CommonStatusCodes.Success, null, sc.Body);
 
                 default:
                     if (drv == null)
-                        return new EvaluationResult(10, null, "There is no driver to display the manual with.");
+                        return new EvaluationResult(10, null
+                            , "There is no driver to display the manual with.");
 
                     return drv.Display(context, man);
             }

@@ -29,9 +29,9 @@ namespace vCommands
         public Dictionary<string, EvaluationResult> Locals { get; internal set; }
 
         /// <summary>
-        /// Gets an object representing the sate of the evaluation.
+        /// Gets an object representing the sate of execution.
         /// </summary>
-        public Object State { get; internal set; }
+        public ExecutionState State { get; internal set; }
 
         /// <summary>
         /// Gets the depth of the evaluation.
@@ -39,14 +39,20 @@ namespace vCommands
         public Int32 Depth { get; internal set; }
 
         /// <summary>
+        /// Gets an object containing state specific to the current evaluation.
+        /// </summary>
+        public Object Cookie { get; internal set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="vCommands.EvaluationContext"/> class with the specified status and output.
         /// </summary>
         /// <param name="host">The <see cref="vCommands.CommandHost"/> under which the evaluation occurs.</param>
         /// <param name="userArguments">optional; An list of expressions as arguments to a user command.</param>
         /// <param name="locals">optional; A list of local variables (pairs of names and values).</param>
-        /// <param name="state">optional; Object representing the state of the evaluation.</param>
+        /// <param name="state">optional; Object representing the state of execution.</param>
         /// <param name="depth">optional; The depth of the invocation(s) in this context.</param>
-        public EvaluationContext(CommandHost host, IList<Expression> userArguments = null, IDictionary<string, EvaluationResult> locals = null, object state = null, int depth = 0)
+        /// <param name="cookie">optional; An object containing state specific to the current evaluation.</param>
+        public EvaluationContext(CommandHost host, IList<Expression> userArguments = null, IDictionary<string, EvaluationResult> locals = null, ExecutionState state = null, int depth = 0, object cookie = null)
         {
             if (host == null)
                 throw new ArgumentNullException("host");
@@ -63,6 +69,7 @@ namespace vCommands
 
             this.State = state;
             this.Depth = depth;
+            this.Cookie = cookie;
         }
 
         /// <summary>
@@ -76,7 +83,7 @@ namespace vCommands
             if (userArguments == null)
                 throw new ArgumentNullException("userArguments");
 
-            return new EvaluationContext(this.Host, userArguments, null, this.State);
+            return new EvaluationContext(this.Host, userArguments, null, this.State, this.Depth, this.Cookie);
 
             //  I feel this is very wrong.
             //  Contrary to the name of the function, locals are erased. They shan't transfer to user commands.
@@ -96,7 +103,7 @@ namespace vCommands
             if (value == null)
                 throw new ArgumentNullException("value");
 
-            var ret = new EvaluationContext(this.Host, this.UserArguments, this.Locals, this.State);
+            var ret = new EvaluationContext(this.Host, this.UserArguments, this.Locals, this.State, this.Depth, this.Cookie);
             ret.Locals[name] = value;
 
             return ret;
@@ -114,7 +121,7 @@ namespace vCommands
             if (locals == null)
                 throw new ArgumentNullException("locals");
 
-            var ret = new EvaluationContext(this.Host, this.UserArguments, this.Locals, this.State);
+            var ret = new EvaluationContext(this.Host, this.UserArguments, this.Locals, this.State, this.Depth, this.Cookie);
 
             foreach (var l in locals)
             {
@@ -136,7 +143,7 @@ namespace vCommands
         /// <returns></returns>
         public EvaluationContext WithChangedDepth(int change = 1)
         {
-            return new EvaluationContext(this.Host, this.UserArguments, this.Locals, this.State, this.Depth + change);
+            return new EvaluationContext(this.Host, this.UserArguments, this.Locals, this.State, this.Depth + change, this.Cookie);
         }
     }
 }

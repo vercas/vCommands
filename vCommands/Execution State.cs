@@ -5,59 +5,29 @@ using System.Globalization;
 namespace vCommands
 {
     using Commands;
-    using EventArguments;
-    using Manuals;
-    using Manuals.Drivers;
-    using Parsing;
-    using Utilities;
     using Variables;
+    using EventArguments;
+    using Utilities;
 
     /// <summary>
-    /// Represents a host of console commands.
+    /// Represents a minimal state of execution.
     /// </summary>
-    public sealed class CommandHost : ICommandContainer
+    public class ExecutionState : ICommandContainer
     {
-        //internal SortedList<string, Command> cmds = new SortedList<string, Command>();
-        internal Dictionary<string, Command> cmds = new Dictionary<string, Command>();
-        internal Dictionary<string, IVariable> vars = new Dictionary<string, IVariable>();
-
-        private object cmds_locker = new object(), vars_locker = new object();
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+        internal protected Dictionary<string, Command> cmds = new Dictionary<string, Command>();
+        internal protected Dictionary<string, IVariable> vars = new Dictionary<string, IVariable>();
 
         /// <summary>
-        /// Gets the library of manuals for this host.
+        /// Synchronization roots.
         /// </summary>
-        public Library Library { get; internal set; }
-
-        /// <summary>
-        /// Gets a collection of manual drivers for this host.
-        /// </summary>
-        public DriverCollection ManualDrivers { get; internal set; }
-
-        /// <summary>
-        /// Gets a value indicating whether the help command's output is shortened or not.
-        /// </summary>
-        public Boolean ShortHelp { get; internal set; }
-
-        /// <summary>
-        /// Gets the maximum depth of the invocation chain.
-        /// </summary>
-        public Int32 MaxDepth { get; internal set; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="vCommands.CommandHost"/> class.
-        /// </summary>
-        public CommandHost(int maxDepth = 1000)
-        {
-            Library = new Library();
-            ManualDrivers = new DriverCollection();
-            ShortHelp = false;
-            MaxDepth = maxDepth;
-        }
+        protected object cmds_locker = new object(), vars_locker = new object();
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
         #region Commands
 
         /// <summary>
-        /// Registers the given command to the host.
+        /// Registers the given command to the execution state.
         /// </summary>
         /// <param name="cmd"></param>
         /// <param name="overwrite">True to overwrite an existing command; otherwise false.</param>
@@ -167,39 +137,6 @@ namespace vCommands
                     return res;
 
             return null;
-        }
-
-        /// <summary>
-        /// Evaluates the given command string and returns the result.
-        /// </summary>
-        /// <remarks>
-        /// The "state" parameter will be preserved in the evaluation context.
-        /// <para>This will allow a user to, for example, have a command perform based on a user's credentials passed through this parameter.</para>
-        /// </remarks>
-        /// <param name="command"></param>
-        /// <param name="state">optional; An object representing the state of execution.</param>
-        /// <param name="cookie">optional; An object representing the state of the current evaluation.</param>
-        /// <returns></returns>
-        /// <exception cref="System.ArgumentNullException">Thrown when the given command string is null.</exception>
-        public EvaluationResult Evaluate(string command, ExecutionState state = null, object cookie = null)
-        {
-            if (command == null)
-                throw new ArgumentNullException("command");
-
-            return Parsing.Parser.Parse(command).Evaluate(new EvaluationContext(this, state: state, cookie: cookie));
-        }
-
-        /// <summary>
-        /// Registers a default set of commands to the host.
-        /// </summary>
-        public void RegisterDefaultCommands(bool includeManual = true, bool includeMath = true, bool shortHelp = false)
-        {
-            ShortHelp = shortHelp;
-
-            DefaultCommands.Register(this, includeManual, includeMath, shortHelp);
-
-            if (includeManual)
-                DefaultManuals.Register(Library, ManualDrivers);
         }
 
         #endregion
@@ -319,46 +256,14 @@ namespace vCommands
         public event TypedEventHandler<ICommandContainer, CommandMutationEventArgs> CommandMutation;
 
         /// <summary>
-        /// Raisese the <see cref="vCommands.CommandHost.CommandMutation"/> event.
+        /// Raisese the <see cref="vCommands.ExecutionState.CommandMutation"/> event.
         /// </summary>
         /// <param name="e">A <see cref="vCommands.EventArguments.CommandMutationEventArgs"/> that contains event data.</param>
         internal void OnCommandMutation(CommandMutationEventArgs e)
         {
             CommandMutation?.Invoke(this, e);
         }
-
-#if HCIE
-        /// <summary>
-        /// Raised before a command is invoked.
-        /// </summary>
-        public event TypedEventHandler<CommandHost, HostCommandInvocationEventArgs> CommandInvocation;
-
-        /// <summary>
-        /// Raisese the <see cref="vCommands.CommandHost.CommandInvocation"/> event.
-        /// </summary>
-        /// <param name="e">A <see cref="vCommands.EventArguments.HostCommandInvocationEventArgs"/> that contains event data.</param>
-        internal void OnInvocation(HostCommandInvocationEventArgs e)
-        {
-            CommandInvocation?.Invoke(this, e);
-        }
-#endif
-
-#if HVCE
-        /// <summary>
-        /// Raised before a command is invoked.
-        /// </summary>
-        public event TypedEventHandler<CommandHost, HostVariableChangeEventArgs> VariableChange;
-
-        /// <summary>
-        /// Raisese the <see cref="vCommands.CommandHost.VariableChange"/> event.
-        /// </summary>
-        /// <param name="e">A <see cref="vCommands.EventArguments.HostVariableChangeEventArgs"/> that contains event data.</param>
-        internal void OnChange(HostVariableChangeEventArgs e)
-        {
-            VariableChange?.Invoke(this, e);
-        }
-#endif
-
+        
         #endregion
     }
 }

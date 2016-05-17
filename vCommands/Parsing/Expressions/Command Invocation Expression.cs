@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -67,11 +68,22 @@ namespace vCommands.Parsing.Expressions
         /// <param name="res">The variable which will contain the result of the evaluation.</param>
         protected override void Evaluate(EvaluationContext context, out EvaluationResult res)
         {
-            var cmd = context.Host.GetCommand(CommandName);
+            Commands.Command cmd = null;
+
+            if (context.State != null)
+                cmd = context.State.GetCommand(CommandName);
+
+            if (cmd == null)
+                cmd = context.Host.GetCommand(CommandName);
 
             if (cmd == null)
             {
-                res = new EvaluationResult(CommonStatusCodes.CommandNotFound, this, string.Format("Command not found: {0}", CommandName), this.CommandName);
+                res = new EvaluationResult(CommonStatusCodes.CommandNotFound, this
+                    , string.Format(CultureInfo.InvariantCulture
+                        , "Command not found: {0}"
+                        , CommandName)
+                    , this.CommandName);
+
                 return;
             }
 
@@ -145,7 +157,9 @@ namespace vCommands.Parsing.Expressions
             if (_command == null)
                 sb.Append("!NULL COMMAND!");
             else if (_command.ToCharArray().Intersect(Parser.MustEscape).Any())
-                sb.AppendFormat("\"{0}\"", _command.Replace("\\", "\\\\").Replace("\"", "\\\""));
+                sb.AppendFormat(CultureInfo.InvariantCulture
+                    , "\"{0}\""
+                    , _command.Replace("\\", "\\\\").Replace("\"", "\\\""));
             else
                 sb.Append(_command);
 
@@ -156,7 +170,9 @@ namespace vCommands.Parsing.Expressions
                 if (a is ConstantExpression)
                     sb.Append(a);
                 else
-                    sb.AppendFormat("[{0}]", a);
+                    sb.AppendFormat(CultureInfo.InvariantCulture
+                        , "[{0}]"
+                        , a);
             }
 
             return sb.ToString();

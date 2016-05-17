@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.Text;
 
 namespace vCommands.Utilities
@@ -41,7 +41,7 @@ namespace vCommands.Utilities
             if (d != null)
                 d[s] = p + i;
 
-            p += i.ToString() + SectionIndexesSeparator;
+            p += i.ToString(CultureInfo.InvariantCulture) + SectionIndexesSeparator;
 
             int j = 0;
 

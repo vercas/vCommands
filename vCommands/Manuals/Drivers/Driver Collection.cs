@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace vCommands.Manuals.Drivers
@@ -54,10 +54,14 @@ namespace vCommands.Manuals.Drivers
             foreach (var item in drivers)
             {
                 if (item.Name == null)
-                    throw new ArgumentException(string.Format("Driver at index {0} has a null name.", i));
+                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture
+                        , "Driver at index {0} has a null name."
+                        , i));
 
                 if (drvs.ContainsKey(item.Name))
-                    throw new ArgumentException(string.Format("Collection already contains a driver with the name of that at index {0}.", i));
+                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture
+                        , "Collection already contains a driver with the name of that at index {0}."
+                        , i));
 
                 drvs.Add(item.Name, item);
 

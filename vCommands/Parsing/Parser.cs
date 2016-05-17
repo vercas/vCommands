@@ -150,7 +150,7 @@ namespace vCommands.Parsing
                         case ':':
                         case '!':
                             if (expectingCommand && current.Length == 0)
-                                throw new FormatException("Separator '" + c + "' at position " + i + " is preceeded by an empty command.");
+                                throw new FormatException("Separator '" + c + "' at position " + i + " is preceded by an empty command.");
 
                             if (current.Length > 0 || canFinishToken)
                             {
@@ -171,10 +171,10 @@ namespace vCommands.Parsing
 
                         case '[':
                             if (expectingCommand)
-                                throw new FormatException("Command name is expected where compoound argument starts at position " + i + ".");
+                                throw new FormatException("Command name is expected where compound argument starts at position " + i + ".");
 
                             if (!preceededByWhitespace)
-                                throw new FormatException("Compound argument start is not preceeded by a space at position " + i + ".");
+                                throw new FormatException("Compound argument start is not preceded by a space at position " + i + ".");
 
                             if (current.Length > 0)
                             {
@@ -193,7 +193,7 @@ namespace vCommands.Parsing
 
                         case ']':
                             if (expectingCommand && current.Length == 0)
-                                throw new FormatException("Empty command name is found where compoound argument ends at position " + i + ".");
+                                throw new FormatException("Empty command name is found where compound argument ends at position " + i + ".");
 
                             if (current.Length > 0 || canFinishToken)
                             {
@@ -303,7 +303,7 @@ namespace vCommands.Parsing
                         else if (lastSeries != null)
                             lastSeries.AddExpression(lastCommand);
                         else if (stack.Count > 0)
-                            throw new FormatException("Toggler follows in a non-empty stack, but there are no preceeding series or conditions.");
+                            throw new FormatException("Toggler follows in a non-empty stack, but there are no preceding series or conditions.");
 
                         stack.Push(lastCommand);
 
@@ -342,7 +342,7 @@ namespace vCommands.Parsing
                         //    lastCommand = stack.Peek() as CommandExecutionExpression;
 
                         if (lastCommand == null)
-                            throw new FormatException("An argument seems to not be preceeded by a command.");
+                            throw new FormatException("An argument seems to not be preceded by a command.");
 
                         lastCommand.AddArgument(ConstantExpression.Fetch(tok.Content));
 
@@ -439,7 +439,7 @@ namespace vCommands.Parsing
 
                     case TokenTypes.CompoundArgumentStart:
                         if (lastCommand == null)
-                            throw new FormatException("A compound argument seems to not be preceeded by a command.");
+                            throw new FormatException("A compound argument seems to not be preceded by a command.");
 
                         lastCommand.AddArgument(Parse(tokens, true));
 

@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Globalization;
 
 namespace vCommands.Utilities
 {
@@ -32,7 +30,12 @@ namespace vCommands.Utilities
                 var evalRes = args[i].Evaluate(context);
 
                 if (!evalRes.TruthValue)
-                    return new Tuple<EvaluationResult, EvaluationResult[]>(new EvaluationResult(errorStatus, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output)), null);
+                    return new Tuple<EvaluationResult, EvaluationResult[]>(
+                        new EvaluationResult(errorStatus, null
+                            , string.Format(CultureInfo.InvariantCulture
+                                , "Evaluation of argument #{0} returned non-zero status: {1} ({2})"
+                                , i + 1, evalRes.Status, evalRes.Output))
+                        , null);
 
                 ers[i] = evalRes;
             }

@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Globalization;
 
 namespace vCommands.Commands
 {
@@ -61,7 +59,10 @@ namespace vCommands.Commands
                 var evalRes = args[i].Evaluate(context);
 
                 if (!evalRes.TruthValue)
-                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null, string.Format("Evaluation of argument #{0} returned non-zero status: {1} ({2})", i + 1, evalRes.Status, evalRes.Output));
+                    return new EvaluationResult(CommonStatusCodes.ArgumentEvaluationFailure, null
+                        , string.Format(CultureInfo.InvariantCulture
+                            , "Evaluation of argument #{0} returned non-zero status: {1} ({2})"
+                            , i + 1, evalRes.Status, evalRes.Output));
 
                 inputs[i + 1] = evalRes.Output;
             }
