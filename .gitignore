@@ -176,3 +176,5 @@ FakesAssemblies/
 # The Batch file for creating release archives
 archive.bat
 Releases/
+
+*.snk
