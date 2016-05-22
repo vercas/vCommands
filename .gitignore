@@ -178,3 +178,5 @@ archive.bat
 Releases/
 
 *.snk
+
+*.nupkg
