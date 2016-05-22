@@ -47,7 +47,6 @@
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
     <None Include="key.snk" />
-    <None Include="Properties\vercas_spc.pfx" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\Alias.cs" />
